@@ -20,6 +20,14 @@ Passed:
 
 Versions 0.1.1 and 0.1.2 were published to npm and their registry integrity matched the prepared tarballs. Version 0.1.2 contains the dark grid fix and is available from the public registry.
 
+## Release automation
+
+The [GitHub Actions validation run](https://github.com/PonyTrap420/gridcraft-embed/actions/runs/37962031361) passed on Ubuntu with Node 24: clean Rust/WASM compilation, dependency license collection, six adapter/release tests, production bundling, Chromium workbook/UI integration tests, and release artifact packing. It used `force_build=true` against the current upstream baseline, so it did not publish a duplicate npm version.
+
+The update script was also exercised in an isolated checkout against the pinned upstream release. All integration patches applied cleanly, the exact source commit was retained, and package/lockfile/state updates prepared a pending next version. Production release state was unchanged by that fixture.
+
+Future upstream changes can still conflict with the maintained patch or fail tests; those failures deliberately prevent publication. npm OIDC publishing will first be exercised on a new upstream release after the account owner approves trusted publishing and the repository's publishing flag is enabled.
+
 Not validated: other browser engines, WebGPU, Next.js builds, very large workbooks, broad Excel parity, long-running memory/performance, or accessibility.
 
 Known issue observed: rapid characters delivered in one animation frame can lose input in upstream grid keyboard handling. The keyboard integration test uses a 100 ms inter-key delay; it does not claim that the rapid-input issue is fixed.
