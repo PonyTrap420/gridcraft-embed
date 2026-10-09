@@ -1,6 +1,11 @@
 import {test} from "node:test";
 import assert from "node:assert/strict";
-import {nextRelease, nextVersion} from "../scripts/release-lib.mjs";
+import {nextRelease, nextVersion, run} from "../scripts/release-lib.mjs";
+test("commands support inherited output and preserve failures", () => {
+  assert.equal(run(process.execPath, ["-e", "process.stdout.write(' value ')"]), "value");
+  assert.equal(run(process.execPath, ["-e", ""], {stdio: "inherit"}), "");
+  assert.throws(() => run(process.execPath, ["-e", "process.exit(1)"], {stdio: "inherit"}));
+});
 test("releases are processed in publication order without skipping a backlog", () => {
   const state = {releaseId: 10, publishedAt: "2026-10-08T10:00:00Z"};
   const releases = [{id: 12, published_at: "2026-10-09T10:00:00Z"}, {id: 11, published_at: state.publishedAt}, {id: 10, published_at: state.publishedAt}, {id: 13, draft: true, published_at: "2026-10-08T11:00:00Z"}];

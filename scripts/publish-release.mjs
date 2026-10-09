@@ -25,10 +25,6 @@ if (!published) throw new Error("npm processing is still pending; the next run w
 if (published.gridcraftUpstream?.releaseId !== state.releaseId) throw new Error("Registry upstream metadata mismatch");
 // A retry may rebuild a tarball with different metadata. For a fresh publish verify its bytes.
 if (!existedBeforePublish && published.dist.integrity !== integrity) throw new Error("Registry integrity mismatch");
-writeJson("upstream-state.json", {...state, status: "published", npmIntegrity: published.dist.integrity});
-run("git", ["add", "upstream-state.json"]);
-if (run("git", ["diff", "--cached", "--name-only"])) run("git", ["commit", "-m", `chore: confirm release ${pkg.version}`]);
-run("git", ["push", "origin", "HEAD:main"]);
 const tag = `v${pkg.version}`;
 if (!run("git", ["tag", "--list", tag])) {run("git", ["tag", tag]); run("git", ["push", "origin", tag]);}
 const releases = await github(`/repos/${process.env.GITHUB_REPOSITORY}/releases?per_page=100`);
@@ -36,4 +32,9 @@ if (!releases.some(release => release.tag_name === tag)) await github(`/repos/${
   tag_name: tag, name: `gridcraft-embed ${pkg.version}`, prerelease: state.prerelease,
   body: `Built and tested from [Gridcraft ${state.tag}](https://github.com/${state.repository}/releases/tag/${state.tag}) at ${state.commit}.\n\nInstall: \`npm install ${pkg.name}@${pkg.version}\`\n\nPreserves the React API, cells-only presentation and dark grid integration.`,
 }});
+// Keep the release pending until both registries are complete so retries can finish either step.
+writeJson("upstream-state.json", {...state, status: "published", npmIntegrity: published.dist.integrity});
+run("git", ["add", "upstream-state.json"]);
+if (run("git", ["diff", "--cached", "--name-only"])) run("git", ["commit", "-m", `chore: confirm release ${pkg.version}`]);
+run("git", ["push", "origin", "HEAD:main"]);
 console.log(`Published ${pkg.name}@${pkg.version} from ${state.tag}`);
