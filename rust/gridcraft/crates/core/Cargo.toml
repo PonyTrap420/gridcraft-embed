@@ -1,0 +1,17 @@
+[package]
+name = "gridcraft-core"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "GridCraft core types: cell addresses, values, errors, date serials"
+
+[lints]
+workspace = true
+
+[dependencies]
+web-time = "1.1"
+serde = { workspace = true }
+thiserror = { workspace = true }
+
+[dev-dependencies]
+serde_json = { workspace = true }

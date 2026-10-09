@@ -1,0 +1,12 @@
+node_modules/
+.work/
+demo/dist/
+dist/wasm/
+rust/gridcraft/target/
+*.tgz
+browser-preview.png
+browser-debug.png
+test-results/
+screenshots/
+.env*
+.npmrc

@@ -1,0 +1,46 @@
+import {cpSync, existsSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync} from "node:fs";
+import path from "node:path";
+import os from "node:os";
+import {run} from "./release-lib.mjs";
+const metadata = JSON.parse(run("cargo", ["+1.95.0", "metadata", "--locked", "--format-version=1", "--filter-platform", "wasm32-unknown-unknown"], {cwd: "rust/gridcraft"}));
+const nodes = new Map(metadata.resolve.nodes.map(node => [node.id, node]));
+const root = metadata.packages.find(pkg => pkg.name === "gridcraft-web");
+if (!root) throw new Error("gridcraft-web package missing");
+const visited = new Set();
+function visit(id) {if (visited.has(id)) return; visited.add(id); for (const dep of nodes.get(id)?.deps ?? []) if (dep.dep_kinds.some(kind => kind.kind !== "dev")) visit(dep.pkg);}
+visit(root.id);
+const output = path.resolve("dist/notices");
+rmSync(output, {recursive: true, force: true}); mkdirSync(output, {recursive: true});
+const notices = [];
+for (const pkg of metadata.packages.filter(pkg => visited.has(pkg.id) && pkg.source)) {
+  const source = path.dirname(pkg.manifest_path);
+  const target = path.join(output, `${pkg.name}-${pkg.version}`);
+  const files = readdirSync(source).filter(name => /^(licen[sc]es?|copying|notice|copyright)([._-]|$)/i.test(name));
+  if (pkg.license_file && existsSync(path.join(source, pkg.license_file))) files.push(pkg.license_file);
+  mkdirSync(target, {recursive: true});
+  for (const name of new Set(files)) cpSync(path.join(source, name), path.join(target, name), {recursive: true});
+  if (!files.length) {
+    // Some crate archives omit workspace-level licenses. Retrieve those at the
+    // crate's exact recorded source commit, retaining upstream copyright notices.
+    const vcsFile = path.join(source, ".cargo_vcs_info.json");
+    const vcs = existsSync(vcsFile) ? JSON.parse(readFileSync(vcsFile, "utf8")) : null;
+    const repo = /^https:\/\/github\.com\/([^/]+)\/([^/#]+?)(?:\.git)?(?:\/.*)?$/.exec(pkg.repository ?? "");
+    if (!repo || !/^[a-f0-9]{40}$/.test(vcs?.git?.sha1 ?? "")) throw new Error(`Pinned license source missing for ${pkg.name}@${pkg.version}`);
+    const candidates = ["LICENSE", "LICENSE-MIT", "LICENSE-APACHE", "LICENSE.md", "LICENSE.txt", "COPYING"];
+    const found = await Promise.all(candidates.map(async name => {
+      const response = await fetch(`https://raw.githubusercontent.com/${repo[1]}/${repo[2]}/${vcs.git.sha1}/${name}`);
+      if (response.status === 404) return false;
+      if (!response.ok) throw new Error(`License fetch failed: ${response.status} for ${pkg.name}/${name}`);
+      writeFileSync(path.join(target, name), await response.text());
+      return true;
+    }));
+    if (!found.some(Boolean)) throw new Error(`License files missing for ${pkg.name}@${pkg.version}`);
+  }
+  if (pkg.name === "epaint_default_fonts") {
+    mkdirSync(path.join(target, "fonts"), {recursive: true});
+    for (const file of readdirSync(path.join(source, "fonts")).filter(name => /\.(txt|md)$/i.test(name))) cpSync(path.join(source, "fonts", file), path.join(target, "fonts", file));
+  }
+  notices.push(`${pkg.name}@${pkg.version}: ${pkg.license ?? "see bundled license"} (${pkg.repository ?? pkg.source})`);
+}
+writeFileSync(path.join(output, "dependencies.txt"), notices.sort().join("\n") + "\n");
+console.log(`Collected license notices for ${notices.length} dependency packages`);

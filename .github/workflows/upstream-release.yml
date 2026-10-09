@@ -1,0 +1,126 @@
+name: Upstream release
+on:
+  schedule:
+    - cron: '17 * * * *'
+  workflow_dispatch:
+    inputs:
+      force_build:
+        description: Build and test the current version even if upstream has not changed
+        type: boolean
+        default: false
+permissions:
+  contents: read
+concurrency:
+  group: upstream-release
+  cancel-in-progress: false
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    outputs:
+      changed: ${{ steps.plan.outputs.changed }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+      - id: plan
+        name: Find next upstream release or retry pending publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: node scripts/plan-release.mjs
+      - name: Check publishing is configured
+        if: steps.plan.outputs.changed == 'true'
+        env:
+          ENABLED: ${{ vars.NPM_PUBLISH_ENABLED }}
+        run: test "$ENABLED" = true || { echo 'Configure npm trusted publishing, then set NPM_PUBLISH_ENABLED=true'; exit 1; }
+      - name: Apply embedding patches to upstream release
+        if: steps.plan.outputs.update == 'true'
+        run: node scripts/update-upstream.mjs
+      - name: Install dependencies
+        if: steps.plan.outputs.changed == 'true' || inputs.force_build
+        run: npm ci
+      - name: Install pinned Rust toolchain
+        if: steps.plan.outputs.changed == 'true' || inputs.force_build
+        run: rustup toolchain install 1.95.0 --profile minimal --target wasm32-unknown-unknown
+      - uses: actions/cache@v4
+        if: steps.plan.outputs.changed == 'true' || inputs.force_build
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            ~/.cargo/bin/wasm-bindgen
+            ~/.cargo/.crates.toml
+            ~/.cargo/.crates2.json
+            rust/gridcraft/target
+          key: wasm-${{ runner.os }}-${{ hashFiles('rust/gridcraft/Cargo.lock') }}
+      - name: Install matching wasm-bindgen
+        if: steps.plan.outputs.changed == 'true' || inputs.force_build
+        run: node scripts/install-bindgen.mjs
+      - name: Compile browser runtime and refresh license notices
+        if: steps.plan.outputs.changed == 'true' || inputs.force_build
+        run: |
+          npm run build
+          node scripts/collect-licenses.mjs
+      - name: Test adapters and production bundle
+        if: steps.plan.outputs.changed == 'true' || inputs.force_build
+        run: |
+          npm test
+          npm run demo:build
+          npx playwright install --with-deps chromium
+      - name: Test actual spreadsheet in Chromium
+        if: steps.plan.outputs.changed == 'true' || inputs.force_build
+        env:
+          DEMO_URL: http://127.0.0.1:5173
+          CHROME_PATH: ''
+          ARTIFACT_DIR: screenshots
+        run: |
+          npm run dev > .work/vite.log 2>&1 &
+          for i in $(seq 1 30); do curl -sf "$DEMO_URL" >/dev/null && break; sleep 1; done
+          npm run test:browser
+      - name: Pack release and updated source
+        if: steps.plan.outputs.changed == 'true' || inputs.force_build
+        run: |
+          npm pack --pack-destination .work
+          tar --exclude=.git --exclude=.work --exclude=node_modules --exclude=dist/wasm --exclude=rust/gridcraft/target --exclude=demo/dist --exclude=screenshots -czf .work/source.tar.gz .
+      - uses: actions/upload-artifact@v4
+        if: steps.plan.outputs.changed == 'true' || inputs.force_build
+        with:
+          name: release
+          path: |
+            .work/*.tgz
+            .work/source.tar.gz
+      - uses: actions/upload-artifact@v4
+        if: always() && (steps.plan.outputs.changed == 'true' || inputs.force_build)
+        with:
+          name: browser-screenshots
+          path: screenshots/
+  publish:
+    needs: build
+    if: needs.build.outputs.changed == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - run: npm install -g npm@11.21.0
+      - uses: actions/download-artifact@v4
+        with:
+          name: release
+          path: .work/artifacts
+      - name: Restore tested source
+        run: |
+          rm -rf rust/gridcraft dist/notices
+          tar -xzf .work/artifacts/source.tar.gz
+      - name: Publish to npm, commit state and create GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: node scripts/publish-release.mjs

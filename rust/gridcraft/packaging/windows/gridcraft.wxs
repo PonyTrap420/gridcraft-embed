@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  GridCraft MSI (WiX Toolset v5: `dotnet tool install -g wix`). Built by package.ps1:
+
+    wix build gridcraft.wxs -arch x64 -d Version=1.2.3 -d BinDir=... -d IconPath=... -o out.msi
+
+  Per-machine install into Program Files, a Start Menu shortcut, App Paths (Win+R `gridcraft`),
+  and GridCraft offered under "Open with" (and in Settings > Default apps) for .xlsx, .xlsm,
+  .csv and .tsv, without taking over the user's default app for them.
+
+  UpgradeCode is fixed for GridCraft (generated 2026-10-07): never change it, or upgrades
+  install side by side instead of replacing the old version.
+-->
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
+  <Package
+      Name="GridCraft"
+      Manufacturer="Learning Machines LLC"
+      Version="$(var.Version)"
+      UpgradeCode="5511327B-F305-41BE-92D0-EB84944E7C4D"
+      Scope="perMachine"
+      Compressed="yes"
+      Language="1033">
+    <SummaryInformation Description="GridCraft spreadsheet" Manufacturer="Learning Machines LLC" />
+    <!-- Same-version upgrades let successive pre-releases of one X.Y.Z replace each other
+         (MSI versions are numeric, so 1.2.3-rc.1 and 1.2.3-rc.2 are both 1.2.3). -->
+    <MajorUpgrade AllowSameVersionUpgrades="yes"
+        DowngradeErrorMessage="A newer version of GridCraft is already installed." />
+    <MediaTemplate EmbedCab="yes" CompressionLevel="high" />
+
+    <Icon Id="GridcraftIcon.ico" SourceFile="$(var.IconPath)" />
+    <Property Id="ARPPRODUCTICON" Value="GridcraftIcon.ico" />
+    <Property Id="ARPURLINFOABOUT" Value="https://getartcraft.com/apps/gridcraft" />
+    <Property Id="ARPURLUPDATEINFO" Value="https://getartcraft.com/apps/gridcraft" />
+    <Property Id="ARPHELPLINK" Value="https://discord.gg/artcraft" />
+
+    <StandardDirectory Id="ProgramFiles6432Folder">
+      <Directory Id="INSTALLFOLDER" Name="GridCraft" />
+    </StandardDirectory>
+    <StandardDirectory Id="ProgramMenuFolder" />
+
+    <Feature Id="Main" Title="GridCraft" Level="1">
+      <ComponentGroupRef Id="GridcraftFiles" />
+    </Feature>
+  </Package>
+
+  <Fragment>
+    <ComponentGroup Id="GridcraftFiles" Directory="INSTALLFOLDER">
+      <Component Id="GridcraftApp" Guid="0507D4B6-12FF-4882-84E1-59083E74A4EB">
+        <File Id="GridcraftExe" Source="$(var.BinDir)\gridcraft.exe" KeyPath="yes">
+          <Shortcut Id="StartMenuShortcut" Directory="ProgramMenuFolder" Name="GridCraft"
+              Description="GridCraft spreadsheet" WorkingDirectory="INSTALLFOLDER" Advertise="yes"
+              Icon="GridcraftIcon.ico" IconIndex="0" />
+        </File>
+
+        <RegistryValue Root="HKLM" Key="Software\Microsoft\Windows\CurrentVersion\App Paths\gridcraft.exe" Value="[#GridcraftExe]" Type="string" />
+
+        <!-- ProgIds: how Explorer opens a file with GridCraft. Nothing here sets HKCR\.<ext>'s
+             default value, so the user's current default app is left alone. -->
+        <RegistryValue Root="HKLM" Key="Software\Classes\GridCraft.Workbook" Value="GridCraft Workbook" Type="string" />
+        <RegistryValue Root="HKLM" Key="Software\Classes\GridCraft.Workbook\DefaultIcon" Value="&quot;[#GridcraftExe]&quot;,0" Type="string" />
+        <RegistryValue Root="HKLM" Key="Software\Classes\GridCraft.Workbook\shell\open\command" Value="&quot;[#GridcraftExe]&quot; &quot;%1&quot;" Type="string" />
+        <RegistryValue Root="HKLM" Key="Software\Classes\GridCraft.TextData" Value="GridCraft Text Data" Type="string" />
+        <RegistryValue Root="HKLM" Key="Software\Classes\GridCraft.TextData\DefaultIcon" Value="&quot;[#GridcraftExe]&quot;,0" Type="string" />
+        <RegistryValue Root="HKLM" Key="Software\Classes\GridCraft.TextData\shell\open\command" Value="&quot;[#GridcraftExe]&quot; &quot;%1&quot;" Type="string" />
+
+        <!-- "Open with": Windows reads only the value names under OpenWithProgids; the data is
+             ignored (WiX rejects an empty Value, so it repeats the ProgId). -->
+        <RegistryValue Root="HKLM" Key="Software\Classes\.xlsx\OpenWithProgids" Name="GridCraft.Workbook" Value="GridCraft.Workbook" Type="string" />
+        <RegistryValue Root="HKLM" Key="Software\Classes\.xlsm\OpenWithProgids" Name="GridCraft.Workbook" Value="GridCraft.Workbook" Type="string" />
+        <RegistryValue Root="HKLM" Key="Software\Classes\.csv\OpenWithProgids" Name="GridCraft.TextData" Value="GridCraft.TextData" Type="string" />
+        <RegistryValue Root="HKLM" Key="Software\Classes\.tsv\OpenWithProgids" Name="GridCraft.TextData" Value="GridCraft.TextData" Type="string" />
+
+        <!-- Settings > Default apps: lets the user pick GridCraft for these types. -->
+        <RegistryValue Root="HKLM" Key="Software\GridCraft\Capabilities" Name="ApplicationName" Value="GridCraft" Type="string" />
+        <RegistryValue Root="HKLM" Key="Software\GridCraft\Capabilities" Name="ApplicationDescription" Value="Open-source spreadsheet for .xlsx, CSV and TSV files" Type="string" />
+        <RegistryValue Root="HKLM" Key="Software\GridCraft\Capabilities\FileAssociations" Name=".xlsx" Value="GridCraft.Workbook" Type="string" />
+        <RegistryValue Root="HKLM" Key="Software\GridCraft\Capabilities\FileAssociations" Name=".xlsm" Value="GridCraft.Workbook" Type="string" />
+        <RegistryValue Root="HKLM" Key="Software\GridCraft\Capabilities\FileAssociations" Name=".csv" Value="GridCraft.TextData" Type="string" />
+        <RegistryValue Root="HKLM" Key="Software\GridCraft\Capabilities\FileAssociations" Name=".tsv" Value="GridCraft.TextData" Type="string" />
+        <RegistryValue Root="HKLM" Key="Software\RegisteredApplications" Name="GridCraft" Value="Software\GridCraft\Capabilities" Type="string" />
+      </Component>
+
+      <Component Id="GridcraftCli">
+        <File Id="GridcraftCliExe" Source="$(var.BinDir)\gridcraft-cli.exe" KeyPath="yes" />
+      </Component>
+    </ComponentGroup>
+  </Fragment>
+</Wix>

@@ -1,0 +1,117 @@
+//! GridCraft file formats: XLSX (Office Open XML SpreadsheetML, transitional and strict) and CSV.
+//!
+//! Clean-room implementation from ECMA-376 / ISO/IEC 29500 and observed behaviour. All entry
+//! points work on byte slices (no file system access), so the crate builds for WebAssembly.
+//!
+//! Reading is lenient: unsupported or broken optional parts are skipped and reported in
+//! [`ReadReport::warnings`]; only a missing/invalid package or workbook part is an error. Hostile
+//! input is bounded: decompressed parts are capped at 512 MB (1 GB per package), cells outside
+//! Excel's grid are dropped and XML nesting is limited.
+#![deny(clippy::unwrap_used, clippy::expect_used, clippy::panic, clippy::unimplemented, clippy::todo, clippy::unreachable)]
+#![forbid(unsafe_code)]
+
+mod chart;
+mod csv;
+mod drawing;
+mod fmla;
+mod package;
+mod pivot;
+mod read;
+mod sheet_read;
+mod sheet_write;
+mod styles;
+mod tables;
+mod theme;
+mod write;
+mod xml;
+
+#[cfg(test)]
+mod tests;
+
+use gridcraft_core::DateSystem;
+use gridcraft_model::Workbook;
+
+pub use csv::{read_csv, write_csv};
+
+/// Errors from reading or writing files.
+#[derive(Debug, thiserror::Error)]
+pub enum IoError {
+    #[error("the file is not a valid zip package: {0}")]
+    Zip(String),
+    #[error("the file contains invalid XML: {0}")]
+    Xml(String),
+    #[error("the file is not a valid spreadsheet: {0}")]
+    Format(String),
+    #[error("the file is too large: {0}")]
+    TooLarge(String),
+}
+
+/// What a lenient read skipped or repaired.
+#[derive(Clone, Debug, Default, PartialEq)]
+pub struct ReadReport {
+    pub warnings: Vec<String>,
+}
+
+impl ReadReport {
+    pub(crate) fn warn(&mut self, msg: impl Into<String>) {
+        let m = msg.into();
+        if self.warnings.len() < 1000 && !self.warnings.contains(&m) {
+            self.warnings.push(m);
+        }
+    }
+}
+
+/// Reads an `.xlsx` / `.xlsm` package.
+pub fn read_xlsx(bytes: &[u8]) -> Result<(Workbook, ReadReport), IoError> {
+    read::read_xlsx(bytes)
+}
+
+/// Writes a workbook as an `.xlsx` package.
+pub fn write_xlsx(wb: &Workbook) -> Result<Vec<u8>, IoError> {
+    write::write_xlsx(wb)
+}
+
+/// CSV import options.
+#[derive(Clone, Debug, PartialEq)]
+pub struct CsvOptions {
+    /// Field separator; `0` auto-detects comma, semicolon or tab.
+    pub delimiter: u8,
+    pub quote: u8,
+    pub date_system: DateSystem,
+    /// Interpret fields like typed input (numbers, dates, booleans…); otherwise keep text.
+    pub parse_values: bool,
+}
+
+impl Default for CsvOptions {
+    fn default() -> Self {
+        CsvOptions { delimiter: b',', quote: b'"', date_system: DateSystem::D1900, parse_values: true }
+    }
+}
+
+/// A file format guessed from content.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Format {
+    Xlsx,
+    Csv,
+    Unknown,
+}
+
+/// Guesses the format from the first bytes: a zip package is XLSX, text is CSV.
+pub fn sniff(bytes: &[u8]) -> Format {
+    if bytes.starts_with(b"PK\x03\x04") || bytes.starts_with(b"PK\x05\x06") || bytes.starts_with(b"PK\x07\x08") {
+        return Format::Xlsx;
+    }
+    if bytes.starts_with(&[0xFF, 0xFE]) || bytes.starts_with(&[0xFE, 0xFF]) || bytes.starts_with(&[0xEF, 0xBB, 0xBF]) {
+        return Format::Csv;
+    }
+    if bytes.is_empty() {
+        return Format::Unknown;
+    }
+    let head = bytes.get(..bytes.len().min(4096)).unwrap_or(bytes);
+    // Binary files (old .xls, images…) contain NULs and many control characters.
+    let control = head.iter().filter(|&&b| b < 0x09 || (0x0E..0x20).contains(&b) || b == 0x7F).count();
+    if head.contains(&0) || control * 20 > head.len() {
+        return Format::Unknown;
+    }
+    Format::Csv
+}

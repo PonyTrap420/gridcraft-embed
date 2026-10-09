@@ -1,0 +1,63 @@
+{
+  "name": "gridcraft-embed",
+  "version": "0.1.2",
+  "description": "Unofficial embeddable Gridcraft spreadsheet UI with a JavaScript API and React component",
+  "type": "module",
+  "license": "MIT OR Apache-2.0",
+  "files": [
+    "dist",
+    "LICENSE-MIT",
+    "LICENSE-APACHE",
+    "NOTICE",
+    "ATTRIBUTION.md",
+    "UPSTREAM.md"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./react": {
+      "types": "./dist/react.d.ts",
+      "import": "./dist/react.js"
+    },
+    "./wasm/*": "./dist/wasm/*"
+  },
+  "sideEffects": false,
+  "peerDependencies": {
+    "react": ">=18 <20"
+  },
+  "peerDependenciesMeta": {
+    "react": {
+      "optional": true
+    }
+  },
+  "scripts": {
+    "build": "node scripts/build-wasm.mjs",
+    "prepack": "node scripts/check-package.mjs",
+    "dev": "vite demo --host 127.0.0.1",
+    "demo:build": "vite build demo",
+    "test": "node --test test/*.test.mjs",
+    "test:browser": "node test/browser.mjs"
+  },
+  "devDependencies": {
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "playwright": "^1.56.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "typescript": "^7.0.2",
+    "vite": "^7.0.0"
+  },
+  "engines": {
+    "node": ">=22.12"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/PonyTrap420/gridcraft-embed.git"
+  },
+  "homepage": "https://github.com/PonyTrap420/gridcraft-embed#readme",
+  "bugs": {
+    "url": "https://github.com/PonyTrap420/gridcraft-embed/issues"
+  }
+}
