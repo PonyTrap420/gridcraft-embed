@@ -1,15 +1,24 @@
-# Gridcraft Embed
+# Gridcraft Embed — Excel-like spreadsheet for React and the browser
 
 [npm](https://www.npmjs.com/package/gridcraft-embed) · [GitHub](https://github.com/PonyTrap420/gridcraft-embed) · [Upstream](https://github.com/storytold/gridcraft)
 
-An **unofficial prototype npm package** that embeds the existing Gridcraft spreadsheet UI directly in a React app. Rust owns the workbook and renders into a canvas; JavaScript exposes the existing command engine. No iframe or spreadsheet backend is required.
+Embed an **Excel-like spreadsheet in your browser app** with a React component or a JavaScript API. Gridcraft Embed brings editable cells, spreadsheet formulas, formatting and XLSX import/export into your own interface. Choose the full spreadsheet UI or an editable cells-only grid, with light and dark modes.
 
-![Gridcraft Embed demo showing the spreadsheet ribbon and formula results](docs/images/demo-light.png)
+This is an unofficial, independently maintained integration of [Gridcraft](https://github.com/storytold/gridcraft), currently a prototype. The workbook runs locally in the browser using WebAssembly and a canvas; no iframe or spreadsheet backend is required.
+
+- **React spreadsheet component:** a typed API for reading cells, writing values and formulas, executing commands, and reacting to workbook changes.
+- **Excel files in the browser:** import and export `.xlsx` workbooks through the API.
+- **Spreadsheet UI:** ribbon, formula bar, sheet tabs, formatting, tables, charts and filters from Gridcraft.
+- **Embedded grid:** cells-only mode, dark mode and custom cell fill/text colors.
+
+Looking for Excel in the browser? This package provides an Excel-like editing experience in your app. It does not embed Microsoft Excel or provide complete Excel compatibility; see [features and limits](#features-and-limits).
+
+![React browser spreadsheet demo with an Excel-like ribbon, formulas and formatted cells](https://raw.githubusercontent.com/PonyTrap420/gridcraft-embed/main/docs/images/demo-light.png)
 
 <details>
 <summary>Dark mode and cells-only preview</summary>
 
-![Gridcraft Embed in dark cells-only mode with custom cell colors](docs/images/demo-dark.png)
+![Gridcraft Embed in dark cells-only mode with custom cell colors](https://raw.githubusercontent.com/PonyTrap420/gridcraft-embed/main/docs/images/demo-dark.png)
 
 </details>
 
@@ -21,16 +30,6 @@ npm install gridcraft-embed
 
 This is an unofficial prototype, independently packaged from Gridcraft. The exact engine release and source commit are recorded in [UPSTREAM.md](UPSTREAM.md). The npm wrapper uses its own version numbers.
 
-## Automatic upstream releases
-
-`.github/workflows/upstream-release.yml` checks upstream GitHub releases hourly (GitHub schedules may be delayed). Each new published release is processed in publication order, with a separate npm version. Drafts are ignored; prereleases publish under the `next` npm tag and stable releases under `latest`.
-
-The workflow resolves each release tag to an exact commit and fetches the upstream source into the ignored `.work/upstream` directory. It applies `patches/embed.patch` with a three-way merge, rebuilds Rust/WASM, generates dependency license notices, runs adapter and Chromium integration tests, and builds the production React demo before publishing. Patch conflicts or failed tests stop publication. `upstream-state.json` records the source commit, npm version, and publishing status; a failed publish is retried without skipping that release or minting another version. Rust source and generated notices are build inputs/outputs, not committed copies.
-
-Publishing uses npm's GitHub trusted publisher for `PonyTrap420/gridcraft-embed`, workflow filename `upstream-release.yml`, with direct publishing enabled. No npm token is stored in GitHub. The repository variable `NPM_PUBLISH_ENABLED=true` enables release publication after this relationship has been configured. The workflow can also be dispatched manually; `force_build=true` checks the current release without publishing a duplicate version.
-
-To reproduce a build, install Rust 1.95.0 and its `wasm32-unknown-unknown` target, then run `npm ci`, `npm run upstream:prepare`, `node scripts/install-bindgen.mjs`, `npm run build`, and `npm test`.
-
 ## React
 
 ```tsx
@@ -41,29 +40,20 @@ import type {SpreadsheetAPI} from "gridcraft-embed";
 export default function App() {
   const spreadsheet = useRef<SpreadsheetAPI | null>(null);
   return (
-    <>
-      <button onClick={async () => {
-        const blob = spreadsheet.current?.exportWorkbook("xlsx");
-        if (blob) {
-          // Save to your own backend; export does not initiate a download.
-          await fetch("/api/workbooks/123", {method: "PUT", body: blob});
-        }
-      }}>Save workbook</button>
-      <Gridcraft
-        ref={spreadsheet}
-        style={{height: 700}}
-        options={{cellsOnly: true}}
-        onReady={(api) => {
-          api.setValues("A1", [
-            ["Revenue", "Cost", "Profit"],
-            [1000, 400, "=A2-B2"],
-          ]);
-          api.execute("home.bold", {range: "A1:C1"});
-        }}
-        onChange={(api) => console.log(api.readRange("A1:C2"))}
-        onError={(error) => console.error(error)}
-      />
-    </>
+    <Gridcraft
+      ref={spreadsheet}
+      style={{height: 700}}
+      options={{cellsOnly: true}}
+      onReady={(api) => {
+        api.setValues("A1", [
+          ["Revenue", "Cost", "Profit"],
+          [1000, 400, "=A2-B2"],
+        ]);
+        api.execute("home.bold", {range: "A1:C1"});
+      }}
+      onChange={(api) => console.log(api.readRange("A1:C2"))}
+      onError={(error) => console.error(error)}
+    />
   );
 }
 ```
@@ -134,6 +124,16 @@ Verified with a production Vite build and a Chromium browser using WebGL2. WebGP
 - Browser date functions now use the real UTC clock, matching the upstream engine's UTC semantics rather than a fixed date. Date-time timezone parity with Excel has not been audited.
 - Some standalone-app commands have desktop assumptions. A listed command does not guarantee it makes sense in an embedded browser environment.
 - Retain the supplied license, attribution and third-party notice files when distributing the compiled runtime.
+
+## Automatic upstream releases
+
+`.github/workflows/upstream-release.yml` checks upstream GitHub releases hourly (GitHub schedules may be delayed). Each new published release is processed in publication order, with a separate npm version. Drafts are ignored; prereleases publish under the `next` npm tag and stable releases under `latest`.
+
+The workflow resolves each release tag to an exact commit and fetches the upstream source into the ignored `.work/upstream` directory. It applies `patches/embed.patch` with a three-way merge, rebuilds Rust/WASM, generates dependency license notices, runs adapter and Chromium integration tests, and builds the production React demo before publishing. Patch conflicts or failed tests stop publication. `upstream-state.json` records the source commit, npm version, and publishing status; a failed publish is retried without skipping that release or minting another version. Rust source and generated notices are build inputs/outputs, not committed copies.
+
+Publishing uses npm's GitHub trusted publisher for `PonyTrap420/gridcraft-embed`, workflow filename `upstream-release.yml`, with direct publishing enabled. No npm token is stored in GitHub. The repository variable `NPM_PUBLISH_ENABLED=true` enables release publication after this relationship has been configured. The workflow can also be dispatched manually; `force_build=true` checks the current release without publishing a duplicate version.
+
+To reproduce a build, install Rust 1.95.0 and its `wasm32-unknown-unknown` target, then run `npm ci`, `npm run upstream:prepare`, `node scripts/install-bindgen.mjs`, `npm run build`, and `npm test`.
 
 ## Develop and rebuild
 

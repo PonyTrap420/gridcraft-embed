@@ -5,8 +5,7 @@
   "tag": "v0.4.0",
   "commit": "13664fe66b952e7abcd68e2371c1d4f34f990dac",
   "publishedAt": "2026-10-10T02:51:32Z",
-  "packageVersion": "0.1.3",
+  "packageVersion": "0.1.4",
   "prerelease": false,
-  "status": "published",
-  "npmIntegrity": "sha512-pFkHN4ncVqG3tjRbeyweQZJ+oPJyTWMf50sDwZJg4ptQVph9/IyhvtImNnvLw2a00ub9dLGDbPcSpG5WYZ62Pg=="
+  "status": "pending"
 }

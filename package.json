@@ -1,7 +1,24 @@
 {
   "name": "gridcraft-embed",
-  "version": "0.1.3",
-  "description": "Unofficial embeddable Gridcraft spreadsheet UI with a JavaScript API and React component",
+  "version": "0.1.4",
+  "description": "Excel-like spreadsheet for React and JavaScript in the browser, with formulas, XLSX import/export, dark mode and an embeddable Gridcraft UI.",
+  "keywords": [
+    "excel",
+    "excel-like",
+    "spreadsheet",
+    "react-spreadsheet",
+    "javascript-spreadsheet",
+    "browser-spreadsheet",
+    "web-spreadsheet",
+    "spreadsheet-component",
+    "xlsx",
+    "formulas",
+    "react",
+    "javascript",
+    "typescript",
+    "webassembly",
+    "gridcraft"
+  ],
   "type": "module",
   "license": "MIT OR Apache-2.0",
   "files": [
@@ -9,6 +26,7 @@
     "LICENSE-MIT",
     "LICENSE-APACHE",
     "NOTICE",
+    "CHANGELOG.md",
     "ATTRIBUTION.md",
     "UPSTREAM.md"
   ],
