@@ -88,6 +88,8 @@ jobs:
         if: steps.plan.outputs.changed == 'true' || inputs.force_build
         with:
           name: release
+          include-hidden-files: true
+          if-no-files-found: error
           path: |
             .work/*.tgz
             .work/source.tar.gz
