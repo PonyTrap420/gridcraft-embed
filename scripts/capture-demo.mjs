@@ -7,7 +7,7 @@ const executablePath = process.env.CHROME_PATH || ["C:/Program Files/Google/Chro
 const browser = await chromium.launch({executablePath, headless: true, args: ["--enable-unsafe-swiftshader", "--use-angle=swiftshader"]});
 try {
   const page = await browser.newPage({viewport: {width: 1280, height: 720}, deviceScaleFactor: 1});
-  await page.goto(process.env.DEMO_URL ?? "http://127.0.0.1:5174");
+  await page.goto(process.env.DEMO_URL ?? "http://127.0.0.1:5173");
   await page.waitForFunction(() => Boolean(window.gridcraft), {timeout: 120000});
   await page.evaluate(() => {
     const api = window.gridcraft;

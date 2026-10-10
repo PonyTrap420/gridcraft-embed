@@ -30,6 +30,8 @@ On 2026-10-10, [the upstream release workflow](https://github.com/PonyTrap420/gr
 
 The reference-based source layout adds a real Git fixture test covering exact commit checkout, three-way patch application, reuse and preservation of local edits. Seven tests pass locally. License generation from the fetched v0.4.0 source produced notices for 155 dependency packages. README previews were captured from the actual React demo and visually inspected.
 
+The [clean reference-based GitHub build](https://github.com/PonyTrap420/gridcraft-embed/actions/runs/38046759361) passed source fetching/patching, Rust/WASM compilation, license generation, all seven tests, production bundling, Chromium integration checks, and artifact creation/upload. It ran with `force_build=true`, so the existing npm version was not published again. An isolated updater fixture also prepared the next pending package version without copying Rust into Git; the production release state remained unchanged.
+
 Future upstream changes can still conflict with the maintained patch or fail tests; those failures deliberately prevent publication.
 
 Not validated: other browser engines, WebGPU, Next.js builds, very large workbooks, broad Excel parity, long-running memory/performance, or accessibility.
