@@ -1,6 +1,6 @@
 {
   "name": "gridcraft-embed",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "Unofficial embeddable Gridcraft spreadsheet UI with a JavaScript API and React component",
   "type": "module",
   "license": "MIT OR Apache-2.0",
@@ -59,5 +59,11 @@
   "homepage": "https://github.com/PonyTrap420/gridcraft-embed#readme",
   "bugs": {
     "url": "https://github.com/PonyTrap420/gridcraft-embed/issues"
+  },
+  "gridcraftUpstream": {
+    "repository": "storytold/gridcraft",
+    "releaseId": 408496191,
+    "tag": "v0.4.0",
+    "commit": "13664fe66b952e7abcd68e2371c1d4f34f990dac"
   }
 }
