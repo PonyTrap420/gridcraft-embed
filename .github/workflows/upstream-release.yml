@@ -41,6 +41,9 @@ jobs:
       - name: Install dependencies
         if: steps.plan.outputs.changed == 'true' || inputs.force_build
         run: npm ci
+      - name: Fetch pinned upstream source and apply integration patch
+        if: steps.plan.outputs.changed == 'true' || inputs.force_build
+        run: node scripts/prepare-upstream.mjs
       - name: Install pinned Rust toolchain
         if: steps.plan.outputs.changed == 'true' || inputs.force_build
         run: rustup toolchain install 1.95.0 --profile minimal --target wasm32-unknown-unknown
@@ -53,16 +56,14 @@ jobs:
             ~/.cargo/bin/wasm-bindgen
             ~/.cargo/.crates.toml
             ~/.cargo/.crates2.json
-            rust/gridcraft/target
-          key: wasm-${{ runner.os }}-${{ hashFiles('rust/gridcraft/Cargo.lock') }}
+            .work/upstream/target
+          key: wasm-fetch-${{ runner.os }}-${{ hashFiles('.work/upstream/Cargo.lock') }}
       - name: Install matching wasm-bindgen
         if: steps.plan.outputs.changed == 'true' || inputs.force_build
         run: node scripts/install-bindgen.mjs
       - name: Compile browser runtime and refresh license notices
         if: steps.plan.outputs.changed == 'true' || inputs.force_build
-        run: |
-          npm run build
-          node scripts/collect-licenses.mjs
+        run: npm run build
       - name: Test adapters and production bundle
         if: steps.plan.outputs.changed == 'true' || inputs.force_build
         run: |
@@ -83,7 +84,7 @@ jobs:
         if: steps.plan.outputs.changed == 'true' || inputs.force_build
         run: |
           npm pack --pack-destination .work
-          tar --exclude=.git --exclude=.work --exclude=node_modules --exclude=dist/wasm --exclude=rust/gridcraft/target --exclude=demo/dist --exclude=screenshots -czf .work/source.tar.gz .
+          tar --exclude=.git --exclude=.work --exclude=node_modules --exclude=dist/wasm --exclude=dist/notices --exclude=demo/dist --exclude=screenshots -czf .work/source.tar.gz .
       - uses: actions/upload-artifact@v4
         if: steps.plan.outputs.changed == 'true' || inputs.force_build
         with:
@@ -119,9 +120,7 @@ jobs:
           name: release
           path: .work/artifacts
       - name: Restore tested source
-        run: |
-          rm -rf rust/gridcraft dist/notices
-          tar -xzf .work/artifacts/source.tar.gz
+        run: tar -xzf .work/artifacts/source.tar.gz
       - name: Publish to npm, commit state and create GitHub release
         env:
           GH_TOKEN: ${{ github.token }}

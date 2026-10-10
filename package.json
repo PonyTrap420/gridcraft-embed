@@ -33,6 +33,7 @@
     }
   },
   "scripts": {
+    "upstream:prepare": "node scripts/prepare-upstream.mjs",
     "build": "node scripts/build-wasm.mjs",
     "prepack": "node scripts/check-package.mjs",
     "dev": "vite demo --host 127.0.0.1",

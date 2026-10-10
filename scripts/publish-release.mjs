@@ -1,5 +1,5 @@
 import {createHash} from "node:crypto";
-import {readFileSync, writeFileSync} from "node:fs";
+import {readFileSync} from "node:fs";
 import {github, readJson, registryVersion, run, writeJson} from "./release-lib.mjs";
 const state = readJson("upstream-state.json");
 const pkg = readJson("package.json");
@@ -8,7 +8,7 @@ const filename = `${pkg.name}-${pkg.version}.tgz`;
 const integrity = `sha512-${createHash("sha512").update(readFileSync(`.work/artifacts/${filename}`)).digest("base64")}`;
 run("git", ["config", "user.name", "github-actions[bot]"]);
 run("git", ["config", "user.email", "41898282+github-actions[bot]@users.noreply.github.com"]);
-run("git", ["add", "package.json", "package-lock.json", "upstream-state.json", "UPSTREAM.md", "rust/gridcraft", "dist/notices"]);
+run("git", ["add", "package.json", "package-lock.json", "upstream-state.json", "UPSTREAM.md", "LICENSE-MIT", "LICENSE-APACHE", "NOTICE"]);
 if (run("git", ["diff", "--cached", "--name-only"])) {
   run("git", ["commit", "-m", `chore: sync upstream ${state.tag}`]);
   run("git", ["push", "origin", "HEAD:main"]);

@@ -4,23 +4,32 @@
 
 An **unofficial prototype npm package** that embeds the existing Gridcraft spreadsheet UI directly in a React app. Rust owns the workbook and renders into a canvas; JavaScript exposes the existing command engine. No iframe or spreadsheet backend is required.
 
+![Gridcraft Embed demo showing the spreadsheet ribbon and formula results](docs/images/demo-light.png)
+
+<details>
+<summary>Dark mode and cells-only preview</summary>
+
+![Gridcraft Embed in dark cells-only mode with custom cell colors](docs/images/demo-dark.png)
+
+</details>
+
 ## Install
 
 ```bash
 npm install gridcraft-embed
 ```
 
-This is an unofficial prototype, independently packaged from Gridcraft v0.3.0. The local release archive can also be installed with `npm install /path/to/gridcraft-embed-0.1.2.tgz`.
+This is an unofficial prototype, independently packaged from Gridcraft. The exact engine release and source commit are recorded in [UPSTREAM.md](UPSTREAM.md). The npm wrapper uses its own version numbers.
 
 ## Automatic upstream releases
 
 `.github/workflows/upstream-release.yml` checks upstream GitHub releases hourly (GitHub schedules may be delayed). Each new published release is processed in publication order, with a separate npm version. Drafts are ignored; prereleases publish under the `next` npm tag and stable releases under `latest`.
 
-The workflow checks out the exact upstream tag, applies `patches/embed.patch` with a three-way merge, rebuilds Rust/WASM, refreshes dependency license notices, runs adapter and Chromium integration tests, and builds the production React demo before publishing. Patch conflicts or failed tests stop publication. `upstream-state.json` records the source commit, npm version, and publishing status; a failed publish is retried without skipping that release or minting another version.
+The workflow resolves each release tag to an exact commit and fetches the upstream source into the ignored `.work/upstream` directory. It applies `patches/embed.patch` with a three-way merge, rebuilds Rust/WASM, generates dependency license notices, runs adapter and Chromium integration tests, and builds the production React demo before publishing. Patch conflicts or failed tests stop publication. `upstream-state.json` records the source commit, npm version, and publishing status; a failed publish is retried without skipping that release or minting another version. Rust source and generated notices are build inputs/outputs, not committed copies.
 
 Publishing uses npm's GitHub trusted publisher for `PonyTrap420/gridcraft-embed`, workflow filename `upstream-release.yml`, with direct publishing enabled. No npm token is stored in GitHub. The repository variable `NPM_PUBLISH_ENABLED=true` enables release publication after this relationship has been configured. The workflow can also be dispatched manually; `force_build=true` checks the current release without publishing a duplicate version.
 
-To reproduce a build, install Rust 1.95.0 and its `wasm32-unknown-unknown` target, then run `npm ci`, `node scripts/install-bindgen.mjs`, `npm run build`, and `npm test`.
+To reproduce a build, install Rust 1.95.0 and its `wasm32-unknown-unknown` target, then run `npm ci`, `npm run upstream:prepare`, `node scripts/install-bindgen.mjs`, `npm run build`, and `npm test`.
 
 ## React
 
@@ -128,12 +137,13 @@ Verified with a production Vite build and a Chromium browser using WebGL2. WebGP
 
 ## Develop and rebuild
 
-The source project includes the pinned upstream Rust workspace under `rust/gridcraft`. Rust 1.95.0 is used because the pinned egui dependencies require it, despite upstream's lower workspace `rust-version` declaration.
+This repository contains the JavaScript/React adapters, types, demo, tests, release scripts and the integration patch. `upstream-state.json` references the original Rust repository by exact commit. Builds fetch and patch that source automatically in `.work/upstream`; it stays out of Git. Rust 1.95.0 is used because the pinned egui dependencies require it, despite upstream's lower workspace `rust-version` declaration.
 
 ```bash
 npm ci
 rustup toolchain install 1.95.0 --profile minimal --target wasm32-unknown-unknown
-cargo +1.95.0 install wasm-bindgen-cli --version 0.2.129 --locked
+npm run upstream:prepare
+node scripts/install-bindgen.mjs
 npm run build
 npm test
 npm run dev
@@ -141,6 +151,6 @@ npm run dev
 
 With the demo server running, `npm run test:browser` runs browser checks. Set `CHROME_PATH` to your browser executable if it is not at a standard Windows Chrome/Edge path, or install Playwright Chromium with `npx playwright install chromium`. `npm run demo:build` verifies a production bundle. `npm pack` produces a runtime-only tarball with WASM and license files; Rust sources, demo, tests and dev dependencies are excluded.
 
-Set `GRIDCRAFT_SOURCE` to another copy of the modified upstream workspace or `WASM_BINDGEN` to a specific CLI executable. Keep the CLI version aligned with the lockfile.
+`npm run build` generates both the browser runtime and the dependency license notices included in the npm package. The first source preparation requires network access. A matching prepared checkout is reused; changed pins, changed patches or local edits require a fresh `.work` directory. Existing checkout files are preserved on mismatch. Set `GRIDCRAFT_SOURCE` to your own modified upstream checkout or `WASM_BINDGEN` to a specific CLI executable. Keep the CLI version aligned with the lockfile.
 
 See `UPSTREAM.md` for provenance and `VALIDATION.md` for results and remaining gaps.

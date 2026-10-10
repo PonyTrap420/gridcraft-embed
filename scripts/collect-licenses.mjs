@@ -1,15 +1,15 @@
 import {cpSync, existsSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync} from "node:fs";
 import path from "node:path";
-import os from "node:os";
 import {run} from "./release-lib.mjs";
-const metadata = JSON.parse(run("cargo", ["+1.95.0", "metadata", "--locked", "--format-version=1", "--filter-platform", "wasm32-unknown-unknown"], {cwd: "rust/gridcraft"}));
+import {getUpstreamSource, packageRoot} from "./upstream.mjs";
+const metadata = JSON.parse(run("cargo", ["+1.95.0", "metadata", "--locked", "--format-version=1", "--filter-platform", "wasm32-unknown-unknown"], {cwd: getUpstreamSource()}));
 const nodes = new Map(metadata.resolve.nodes.map(node => [node.id, node]));
 const root = metadata.packages.find(pkg => pkg.name === "gridcraft-web");
 if (!root) throw new Error("gridcraft-web package missing");
 const visited = new Set();
 function visit(id) {if (visited.has(id)) return; visited.add(id); for (const dep of nodes.get(id)?.deps ?? []) if (dep.dep_kinds.some(kind => kind.kind !== "dev")) visit(dep.pkg);}
 visit(root.id);
-const output = path.resolve("dist/notices");
+const output = path.join(packageRoot, "dist/notices");
 rmSync(output, {recursive: true, force: true}); mkdirSync(output, {recursive: true});
 const notices = [];
 for (const pkg of metadata.packages.filter(pkg => visited.has(pkg.id) && pkg.source)) {

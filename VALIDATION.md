@@ -26,7 +26,11 @@ The [GitHub Actions validation run](https://github.com/PonyTrap420/gridcraft-emb
 
 The update script was also exercised in an isolated checkout against the pinned upstream release. All integration patches applied cleanly, the exact source commit was retained, and package/lockfile/state updates prepared a pending next version. Production release state was unchanged by that fixture.
 
-Future upstream changes can still conflict with the maintained patch or fail tests; those failures deliberately prevent publication. npm OIDC publishing will first be exercised on a new upstream release after the account owner approves trusted publishing and the repository's publishing flag is enabled.
+On 2026-10-10, [the upstream release workflow](https://github.com/PonyTrap420/gridcraft-embed/actions/runs/38045618810) rebuilt Gridcraft v0.4.0, passed the browser checks, published gridcraft-embed 0.1.3 with npm OIDC/provenance, verified its registry integrity and created the GitHub release.
+
+The reference-based source layout adds a real Git fixture test covering exact commit checkout, three-way patch application, reuse and preservation of local edits. Seven tests pass locally. License generation from the fetched v0.4.0 source produced notices for 155 dependency packages. README previews were captured from the actual React demo and visually inspected.
+
+Future upstream changes can still conflict with the maintained patch or fail tests; those failures deliberately prevent publication.
 
 Not validated: other browser engines, WebGPU, Next.js builds, very large workbooks, broad Excel parity, long-running memory/performance, or accessibility.
 

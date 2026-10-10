@@ -2,7 +2,7 @@ node_modules/
 .work/
 demo/dist/
 dist/wasm/
-rust/gridcraft/target/
+dist/notices/
 *.tgz
 browser-preview.png
 browser-debug.png
