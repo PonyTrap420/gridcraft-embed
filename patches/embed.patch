@@ -1,8 +1,8 @@
 diff --git a/Cargo.lock b/Cargo.lock
-index 29bd97a..d2a2bac 100644
+index f772f83d24d16c31239e1edc5862ffea8f61efc7..5508e960fcd1e30e2ecafa00f24b3f939770c243 100644
 --- a/Cargo.lock
 +++ b/Cargo.lock
-@@ -1416,6 +1416,7 @@ dependencies = [
+@@ -1442,6 +1442,7 @@ dependencies = [
   "gridcraft-model",
   "gridcraft-numfmt",
   "log",
@@ -10,15 +10,7 @@ index 29bd97a..d2a2bac 100644
  ]
  
  [[package]]
-@@ -1446,6 +1447,7 @@ dependencies = [
-  "serde",
-  "serde_json",
-  "thiserror 2.0.21",
-+ "web-time",
- ]
- 
- [[package]]
-@@ -1466,6 +1468,7 @@ dependencies = [
+@@ -1472,6 +1473,7 @@ dependencies = [
   "serde",
   "serde_json",
   "thiserror 2.0.21",
@@ -27,7 +19,7 @@ index 29bd97a..d2a2bac 100644
  
  [[package]]
 diff --git a/apps/gridcraft-web/Cargo.toml b/apps/gridcraft-web/Cargo.toml
-index 991c633..f7ef12d 100644
+index 356c63b8476977c5ec3034dc25607224b098f68b..f5aba4083bba0fc908e66442e86da5a21096e1ae 100644
 --- a/apps/gridcraft-web/Cargo.toml
 +++ b/apps/gridcraft-web/Cargo.toml
 @@ -6,6 +6,9 @@ edition.workspace = true
@@ -40,323 +32,9 @@ index 991c633..f7ef12d 100644
  [lints]
  workspace = true
  
-diff --git a/apps/gridcraft-web/src/web.rs b/apps/gridcraft-web/src/web.rs
-index c06d890..9481aff 100644
---- a/apps/gridcraft-web/src/web.rs
-+++ b/apps/gridcraft-web/src/web.rs
-@@ -90,7 +90,7 @@ impl eframe::App for WebShell {
-     }
- }
- 
--fn services(inbox: Inbox, ctx: egui::Context) -> Services {
-+pub(crate) fn services(inbox: Inbox, ctx: egui::Context) -> Services {
-     let open_inbox = inbox.clone();
-     Services {
-         open_async: Some(Box::new(move || {
-diff --git a/crates/calc/Cargo.toml b/crates/calc/Cargo.toml
-index 8f1bd12..a608ee9 100644
---- a/crates/calc/Cargo.toml
-+++ b/crates/calc/Cargo.toml
-@@ -9,6 +9,7 @@ description = "GridCraft calculation engine: dependency graph, recalculation, ev
- workspace = true
- 
- [dependencies]
-+web-time = "1.1"
- gridcraft-core = { workspace = true }
- gridcraft-formula = { workspace = true }
- gridcraft-functions = { workspace = true }
-diff --git a/crates/calc/src/recalc.rs b/crates/calc/src/recalc.rs
-index 13b47c4..62e6fea 100644
---- a/crates/calc/src/recalc.rs
-+++ b/crates/calc/src/recalc.rs
-@@ -552,14 +552,10 @@ impl Calc {
-     }
- }
- 
--/// Local date-time as a serial (1900 system). Wasm without a clock returns a fixed date.
-+/// Current UTC date-time as a serial (1900 system), including in a browser.
- pub fn now_serial() -> f64 {
--    #[cfg(not(target_arch = "wasm32"))]
--    {
--        if let Ok(d) = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH) {
--            // UTC; local offset isn't available without platform calls.
--            return 25569.0 + d.as_secs_f64() / 86400.0;
--        }
-+    if let Ok(d) = web_time::SystemTime::now().duration_since(web_time::UNIX_EPOCH) {
-+        return 25569.0 + d.as_secs_f64() / 86400.0;
-     }
-     46302.5
- }
-diff --git a/crates/core/Cargo.toml b/crates/core/Cargo.toml
-index 26cd19f..68040e5 100644
---- a/crates/core/Cargo.toml
-+++ b/crates/core/Cargo.toml
-@@ -9,6 +9,7 @@ description = "GridCraft core types: cell addresses, values, errors, date serial
- workspace = true
- 
- [dependencies]
-+web-time = "1.1"
- serde = { workspace = true }
- thiserror = { workspace = true }
- 
-diff --git a/crates/core/src/parse.rs b/crates/core/src/parse.rs
-index b08cf2a..1d657a5 100644
---- a/crates/core/src/parse.rs
-+++ b/crates/core/src/parse.rs
-@@ -273,15 +273,11 @@ fn valid_ymd(sys: DateSystem, y: i64, m: i64, d: i64) -> Option<f64> {
-     serial_from_ymd(sys, y, m, d)
- }
- 
--/// The year used for dates typed without one. Fixed per process from the system clock when
--/// available (wasm without clock falls back to 2026).
-+/// The year used for dates typed without one, from the UTC clock (also on WASM).
- pub fn current_year() -> i64 {
--    #[cfg(not(target_arch = "wasm32"))]
--    {
--        if let Ok(d) = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH) {
--            let days = (d.as_secs() / 86400) as i64;
--            return crate::date::civil_from_days(days).0 as i64;
--        }
-+    if let Ok(d) = web_time::SystemTime::now().duration_since(web_time::UNIX_EPOCH) {
-+        let days = (d.as_secs() / 86400) as i64;
-+        return crate::date::civil_from_days(days).0 as i64;
-     }
-     2026
- }
-diff --git a/crates/engine/Cargo.toml b/crates/engine/Cargo.toml
-index 53e2350..e11dbbf 100644
---- a/crates/engine/Cargo.toml
-+++ b/crates/engine/Cargo.toml
-@@ -23,3 +23,6 @@ gridcraft-xlsx = { workspace = true }
- gridcraft-chart = { workspace = true }
- gridcraft-pdf = { workspace = true }
- image = { workspace = true }
-+
-+[target.'cfg(target_arch = "wasm32")'.dependencies]
-+web-time = "1.1"
-diff --git a/crates/engine/src/cmd/mod.rs b/crates/engine/src/cmd/mod.rs
-index 397a05c..afb74be 100644
---- a/crates/engine/src/cmd/mod.rs
-+++ b/crates/engine/src/cmd/mod.rs
-@@ -218,7 +218,10 @@ pub(crate) fn edit<R>(s: &mut Session, f: impl FnOnce(&mut Ctx) -> Result<R>) ->
- 
- pub(crate) fn commit<R>(d: &mut DocState, f: impl FnOnce(&mut Ctx) -> Result<R>) -> Result<R> {
-     let prof = std::env::var_os("GRIDCRAFT_PROFILE").is_some();
-+    #[cfg(not(target_arch = "wasm32"))]
-     let t0 = std::time::Instant::now();
-+    #[cfg(target_arch = "wasm32")]
-+    let t0 = web_time::Instant::now();
-     let mut sel = d.selection.clone();
-     let mut ctx = Ctx { wb: (*d.wb).clone(), changed: Vec::new(), structural: false, sel: &mut sel, fit_rows: Vec::new() };
-     let r = f(&mut ctx)?;
-diff --git a/crates/ui-egui/src/formula_bar.rs b/crates/ui-egui/src/formula_bar.rs
-index 753585f..015d50e 100644
---- a/crates/ui-egui/src/formula_bar.rs
-+++ b/crates/ui-egui/src/formula_bar.rs
-@@ -234,7 +234,11 @@ pub fn editor_widget(app: &mut SheetApp, ui: &mut egui::Ui, id: egui::Id, font:
-     // The text widget.
-     let refs = formula_refs(&ed.text);
-     let text_color = Tokens::get(ui.ctx()).text;
--    let cell_text_color = if id == egui::Id::new("gridcraft.cell_editor") { Color32::BLACK } else { text_color };
-+    let cell_text_color = if id == egui::Id::new("gridcraft.cell_editor") {
-+        ui.visuals().override_text_color.unwrap_or(Tokens::get(ui.ctx()).cell_text)
-+    } else {
-+        text_color
-+    };
-     let font2 = font.clone();
-     let mut layouter = move |ui: &egui::Ui, buf: &dyn egui::TextBuffer, wrap_width: f32| {
-         let s = buf.as_str();
-diff --git a/crates/ui-egui/src/grid.rs b/crates/ui-egui/src/grid.rs
-index 4b326cc..b7fe4f7 100644
---- a/crates/ui-egui/src/grid.rs
-+++ b/crates/ui-egui/src/grid.rs
-@@ -214,7 +214,7 @@ fn numfmt_color(c: gridcraft_engine::numfmt::FormatColor) -> Color32 {
-     }
- }
- 
--fn look(wb: &Workbook, si: usize, sh: &Sheet, c: CellRef, cf: &mut CfCache) -> (Look, Option<CfLook>) {
-+fn look(wb: &Workbook, si: usize, sh: &Sheet, c: CellRef, cf: &mut CfCache, t: &Tokens) -> (Look, Option<CfLook>) {
-     let mut style = wb.styles.get(sh.style_id(c)).clone();
-     if let Some(t) = sh.table_at(c) {
-         style = gridcraft_engine::tables::table_cell_style(wb, si, t, c);
-@@ -271,7 +271,7 @@ fn look(wb: &Workbook, si: usize, sh: &Sheet, c: CellRef, cf: &mut CfCache) -> (
-     {
-         fill = Some(theme::color32(rgb));
-     }
--    let text_color = col32(style.font.color, wb, Color32::BLACK);
-+    let text_color = col32(style.font.color, wb, t.automatic_cell_text(fill));
-     (Look { style, fill, text_color }, cfl)
- }
- 
-@@ -493,11 +493,11 @@ fn paint_quadrant(
-             Some(m) => (geo.range_rect(sh, m), m.start),
-             None => (geo.cell_rect(sh, c), c),
-         };
--        let (lk, cfl) = look(wb, si, sh, anchor, cf);
-+        let (lk, cfl) = look(wb, si, sh, anchor, cf, t);
-         if let Some(f) = lk.fill {
-             p.rect_filled(rect.expand(0.0), 0.0, f);
-         } else if in_merge(c).is_some() {
--            p.rect_filled(rect.shrink(0.5), 0.0, Color32::WHITE);
-+            p.rect_filled(rect.shrink(0.5), 0.0, t.grid_bg);
-         }
-         looks.push((anchor, rect, lk, cfl));
-     }
-@@ -703,14 +703,14 @@ fn paint_quadrant(
-             if line.is_none() {
-                 continue;
-             }
--            let col = col32(line.color, wb, Color32::BLACK);
-+            let col = col32(line.color, wb, t.cell_text);
-             paint_border(p, pts, line.style, col);
-         }
-         if !b.diag_down.is_none() {
--            paint_border(p, [rect.left_top(), rect.right_bottom()], b.diag_down.style, col32(b.diag_down.color, wb, Color32::BLACK));
-+            paint_border(p, [rect.left_top(), rect.right_bottom()], b.diag_down.style, col32(b.diag_down.color, wb, t.cell_text));
-         }
-         if !b.diag_up.is_none() {
--            paint_border(p, [rect.left_bottom(), rect.right_top()], b.diag_up.style, col32(b.diag_up.color, wb, Color32::BLACK));
-+            paint_border(p, [rect.left_bottom(), rect.right_top()], b.diag_up.style, col32(b.diag_up.color, wb, t.cell_text));
-         }
-         // Comment / note indicator.
-         if let Some(cm) = sh.comments.get(c) {
-@@ -1627,19 +1627,23 @@ fn in_cell_editor(app: &mut SheetApp, ui: &mut egui::Ui, geo: &Geo, sh: &Sheet,
-     let st = wb.styles.get(sh.style_id(cell)).clone();
-     let size = st.font.size * 96.0 / 72.0 * geo.z;
-     let font = FontId::new(size, theme::cell_family(&st.font.name, st.font.bold, st.font.italic));
--    let text_w = ui.painter().layout_no_wrap(ed.text.clone(), font.clone(), Color32::BLACK).size().x;
-+    let t = Tokens::get(ui.ctx());
-+    let explicit_fill = match st.fill.pattern {
-+        PatternType::Solid => st.fill.fg.resolve(&wb.theme).map(theme::color32),
-+        _ => None,
-+    };
-+    let fill = explicit_fill.unwrap_or(t.grid_bg);
-+    let text_color = col32(st.font.color, wb, t.automatic_cell_text(explicit_fill));
-+    let text_w = ui.painter().layout_no_wrap(ed.text.clone(), font.clone(), text_color).size().x;
-     let lines = ed.text.lines().count().max(1) as f32 + if ed.text.ends_with('\n') { 1.0 } else { 0.0 };
-     let w = (text_w + 14.0).max(rect.width()).min(geo.cells.right() - rect.left());
-     let h = (size * 1.3 * lines + 4.0).max(rect.height());
-     let erect = Rect::from_min_size(rect.min, vec2(w, h));
--    let fill = match st.fill.pattern {
--        PatternType::Solid => st.fill.fg.resolve(&wb.theme).map(theme::color32).unwrap_or(Color32::WHITE),
--        _ => Color32::WHITE,
--    };
-     ui.painter().rect_filled(erect, 0.0, fill);
--    ui.painter().rect_stroke(erect.expand(1.0), 0.0, Stroke::new(2.0, Tokens::get(ui.ctx()).sel_border), StrokeKind::Middle);
-+    ui.painter().rect_stroke(erect.expand(1.0), 0.0, Stroke::new(2.0, t.sel_border), StrokeKind::Middle);
-     let id = egui::Id::new("gridcraft.cell_editor");
-     let mut child = ui.new_child(egui::UiBuilder::new().max_rect(erect.shrink2(vec2(2.0, 1.0))));
-+    child.visuals_mut().override_text_color = Some(text_color);
-     crate::formula_bar::editor_widget(app, &mut child, id, font, false, erect.width() - 4.0);
- }
- 
-diff --git a/crates/ui-egui/src/lib.rs b/crates/ui-egui/src/lib.rs
-index 8eb1eca..5a21041 100644
---- a/crates/ui-egui/src/lib.rs
-+++ b/crates/ui-egui/src/lib.rs
-@@ -35,6 +35,8 @@ pub use control::{ControlRequest, ControlResponse};
- #[serde(default, rename_all = "camelCase")]
- pub struct UiState {
-     pub dark: bool,
-+    /// Embedded view: only the editable grid, headers, and scrolling.
-+    pub cells_only: bool,
-     pub ribbon_tab: String,
-     pub ribbon_collapsed: bool,
-     pub formula_bar: bool,
-@@ -47,6 +49,7 @@ impl Default for UiState {
-     fn default() -> Self {
-         UiState {
-             dark: false,
-+            cells_only: false,
-             ribbon_tab: "Home".into(),
-             ribbon_collapsed: false,
-             formula_bar: true,
-@@ -170,6 +173,10 @@ impl SheetApp {
-     /// UI-only commands (dialogs, view toggles that aren't saved in the file).
-     fn run_ui_command(&mut self, id: &str, p: &Json) -> Option<Result<Json, String>> {
-         let r = match id {
-+            "view.cellsOnly" => {
-+                self.ui.cells_only = p.get("on").and_then(Json::as_bool).unwrap_or(!self.ui.cells_only);
-+                Ok(json!({"on": self.ui.cells_only}))
-+            }
-             "ui.ribbonTab" => {
-                 self.ui.ribbon_tab = p.get("tab").and_then(Json::as_str).unwrap_or("Home").to_string();
-                 Ok(Json::Null)
-@@ -400,17 +407,19 @@ impl SheetApp {
-         }
-         let t0 = now_ms();
-         let t = theme::Tokens::get(&ctx);
--        ribbon::title_bar(self, ui);
--        ribbon::show(self, ui);
--        if self.ui.formula_bar {
--            formula_bar::show(self, ui);
--        }
--        if self.ui.status_bar {
--            tabs::status_bar(self, ui);
-+        if !self.ui.cells_only {
-+            ribbon::title_bar(self, ui);
-+            ribbon::show(self, ui);
-+            if self.ui.formula_bar {
-+                formula_bar::show(self, ui);
-+            }
-+            if self.ui.status_bar {
-+                tabs::status_bar(self, ui);
-+            }
-+            tabs::sheet_tabs(self, ui);
-+            pivot_pane::show(self, ui);
-+            panes::show(self, ui);
-         }
--        tabs::sheet_tabs(self, ui);
--        pivot_pane::show(self, ui);
--        panes::show(self, ui);
-         egui::CentralPanel::default().frame(egui::Frame::NONE.fill(t.grid_bg)).show(ui, |ui| {
-             let g0 = now_ms();
-             grid::show(self, ui);
-diff --git a/crates/ui-egui/src/theme.rs b/crates/ui-egui/src/theme.rs
-index 2dbd8df..bf43253 100644
---- a/crates/ui-egui/src/theme.rs
-+++ b/crates/ui-egui/src/theme.rs
-@@ -98,8 +98,8 @@ impl Tokens {
-             hover: Color32::from_rgb(0x42, 0x42, 0x42),
-             pressed: Color32::from_rgb(0x4D, 0x4D, 0x4D),
-             separator: Color32::from_rgb(0x48, 0x48, 0x48),
--            grid_bg: Color32::WHITE,
--            gridline: Color32::from_rgb(0xE1, 0xE1, 0xE1),
-+            grid_bg: Color32::from_rgb(0x20, 0x20, 0x20),
-+            gridline: Color32::from_rgb(0x38, 0x38, 0x38),
-             header_bg: Color32::from_rgb(0x30, 0x30, 0x30),
-             header_text: Color32::from_rgb(0xCC, 0xCC, 0xCC),
-             header_line: Color32::from_rgb(0x45, 0x45, 0x45),
-@@ -113,7 +113,7 @@ impl Tokens {
-             tab_bar: Color32::from_rgb(0x29, 0x29, 0x29),
-             tab_active: Color32::from_rgb(0x3A, 0x3A, 0x3A),
-             status_bar: Color32::from_rgb(0x29, 0x29, 0x29),
--            cell_text: Color32::BLACK,
-+            cell_text: Color32::from_rgb(0xEE, 0xEE, 0xEE),
-             menu_bg: Color32::from_rgb(0x30, 0x30, 0x30),
-             shadow: Color32::from_black_alpha(90),
-             danger: Color32::from_rgb(0xF1, 0x70, 0x5F),
-@@ -123,6 +123,18 @@ impl Tokens {
-     pub fn get(ctx: &egui::Context) -> Tokens {
-         if ctx.global_style().visuals.dark_mode { Tokens::dark() } else { Tokens::light() }
-     }
-+
-+    /// Automatic text follows the UI theme, with contrast against an explicit cell fill.
-+    /// This affects painting only; workbook colours and exported styles are unchanged.
-+    pub fn automatic_cell_text(&self, fill: Option<Color32>) -> Color32 {
-+        let Some(fill) = fill.filter(|_| self.dark) else { return self.cell_text };
-+        let linear = |channel: u8| {
-+            let value = f32::from(channel) / 255.0;
-+            if value <= 0.04045 { value / 12.92 } else { ((value + 0.055) / 1.055).powf(2.4) }
-+        };
-+        let luminance = 0.2126 * linear(fill.r()) + 0.7152 * linear(fill.g()) + 0.0722 * linear(fill.b());
-+        if luminance > 0.179 { Color32::BLACK } else { Color32::WHITE }
-+    }
- }
- 
- pub const UI: &str = "ui";
 diff --git a/apps/gridcraft-web/src/embed.rs b/apps/gridcraft-web/src/embed.rs
 new file mode 100644
+index 0000000000000000000000000000000000000000..3140a53c4198041e79a59ceb9e02f244c94a3bfa
 --- /dev/null
 +++ b/apps/gridcraft-web/src/embed.rs
 @@ -0,0 +1,156 @@
@@ -518,6 +196,7 @@ new file mode 100644
 +}
 diff --git a/apps/gridcraft-web/src/lib.rs b/apps/gridcraft-web/src/lib.rs
 new file mode 100644
+index 0000000000000000000000000000000000000000..d391efb92712364b048c502e96e6bf3732c661ed
 --- /dev/null
 +++ b/apps/gridcraft-web/src/lib.rs
 @@ -0,0 +1,10 @@
@@ -531,3 +210,297 @@ new file mode 100644
 +mod embed;
 +#[cfg(target_arch = "wasm32")]
 +pub use embed::*;
+diff --git a/apps/gridcraft-web/src/web.rs b/apps/gridcraft-web/src/web.rs
+index f5744bd190ddaeba6ee09f990f77315f68a2cbfb..e236dc0f94f491e3c3ea5fb93adfd5adb8e2d0b8 100644
+--- a/apps/gridcraft-web/src/web.rs
++++ b/apps/gridcraft-web/src/web.rs
+@@ -99,7 +99,7 @@ impl eframe::App for WebShell {
+     }
+ }
+ 
+-fn services(inbox: Inbox, ctx: egui::Context) -> Services {
++pub(crate) fn services(inbox: Inbox, ctx: egui::Context) -> Services {
+     let open_inbox = inbox.clone();
+     let picture_ctx = ctx.clone();
+     Services {
+diff --git a/crates/calc/Cargo.toml b/crates/calc/Cargo.toml
+index 8f1bd128578532bf300c839ccd76172ffb8aaae4..a608ee949d2f44041f9e7be6a870dd55264921b2 100644
+--- a/crates/calc/Cargo.toml
++++ b/crates/calc/Cargo.toml
+@@ -9,6 +9,7 @@ description = "GridCraft calculation engine: dependency graph, recalculation, ev
+ workspace = true
+ 
+ [dependencies]
++web-time = "1.1"
+ gridcraft-core = { workspace = true }
+ gridcraft-formula = { workspace = true }
+ gridcraft-functions = { workspace = true }
+diff --git a/crates/calc/src/recalc.rs b/crates/calc/src/recalc.rs
+index 4cf0c6a21c1d9c6819325a16f96f03ba0a7ec5b8..1a82b7af340c7a49d80abf21767809057ced131f 100644
+--- a/crates/calc/src/recalc.rs
++++ b/crates/calc/src/recalc.rs
+@@ -919,15 +919,10 @@ impl Calc {
+     }
+ }
+ 
+-/// Local date-time as a serial (1900 system). Wasm without a clock returns a fixed date.
+-#[allow(clippy::disallowed_methods)] // the clock is read only off wasm
++/// Current UTC date-time as a serial (1900 system), including in a browser.
+ pub fn now_serial() -> f64 {
+-    #[cfg(not(target_arch = "wasm32"))]
+-    {
+-        if let Ok(d) = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH) {
+-            // UTC; local offset isn't available without platform calls.
+-            return 25569.0 + d.as_secs_f64() / 86400.0;
+-        }
++    if let Ok(d) = web_time::SystemTime::now().duration_since(web_time::UNIX_EPOCH) {
++        return 25569.0 + d.as_secs_f64() / 86400.0;
+     }
+     46302.5
+ }
+diff --git a/crates/core/Cargo.toml b/crates/core/Cargo.toml
+index 26cd19f08b52f7328e5ecfdc9a1dd15fc8b424c2..68040e52c40ebbe88a9e5435efbe3f3162d9ea1b 100644
+--- a/crates/core/Cargo.toml
++++ b/crates/core/Cargo.toml
+@@ -9,6 +9,7 @@ description = "GridCraft core types: cell addresses, values, errors, date serial
+ workspace = true
+ 
+ [dependencies]
++web-time = "1.1"
+ serde = { workspace = true }
+ thiserror = { workspace = true }
+ 
+diff --git a/crates/core/src/parse.rs b/crates/core/src/parse.rs
+index 7169ae5458643805daf0b8e168f0be02ad649c6e..5ff42bf1767d1a01fd7e1cb072b02622554bc07d 100644
+--- a/crates/core/src/parse.rs
++++ b/crates/core/src/parse.rs
+@@ -273,16 +273,11 @@ fn valid_ymd(sys: DateSystem, y: i64, m: i64, d: i64) -> Option<f64> {
+     serial_from_ymd(sys, y, m, d)
+ }
+ 
+-/// The year used for dates typed without one. Fixed per process from the system clock when
+-/// available (wasm without clock falls back to 2026).
+-#[allow(clippy::disallowed_methods)] // the clock is read only off wasm
++/// The year used for dates typed without one, from the UTC clock (also on WASM).
+ pub fn current_year() -> i64 {
+-    #[cfg(not(target_arch = "wasm32"))]
+-    {
+-        if let Ok(d) = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH) {
+-            let days = (d.as_secs() / 86400) as i64;
+-            return crate::date::civil_from_days(days).0 as i64;
+-        }
++    if let Ok(d) = web_time::SystemTime::now().duration_since(web_time::UNIX_EPOCH) {
++        let days = (d.as_secs() / 86400) as i64;
++        return crate::date::civil_from_days(days).0 as i64;
+     }
+     2026
+ }
+diff --git a/crates/ui-egui/src/formula_bar.rs b/crates/ui-egui/src/formula_bar.rs
+index 6cca1103c057bf4156f94e13deb3c44a7e6df2af..cd1e32ad8dc8177f7164b18a1951ce5977c56611 100644
+--- a/crates/ui-egui/src/formula_bar.rs
++++ b/crates/ui-egui/src/formula_bar.rs
+@@ -246,7 +246,11 @@ pub fn editor_widget(app: &mut SheetApp, ui: &mut egui::Ui, id: egui::Id, font:
+     // The text widget.
+     let refs = formula_refs(&ed.text);
+     let text_color = Tokens::get(ui.ctx()).text;
+-    let cell_text_color = if id == egui::Id::new("gridcraft.cell_editor") { Color32::BLACK } else { text_color };
++    let cell_text_color = if id == egui::Id::new("gridcraft.cell_editor") {
++        ui.visuals().override_text_color.unwrap_or(Tokens::get(ui.ctx()).cell_text)
++    } else {
++        text_color
++    };
+     let font2 = font.clone();
+     let mut layouter = move |ui: &egui::Ui, buf: &dyn egui::TextBuffer, wrap_width: f32| {
+         let s = buf.as_str();
+diff --git a/crates/ui-egui/src/grid.rs b/crates/ui-egui/src/grid.rs
+index 72d33e2dc7b80881ac9b20ab836b6a6554b9994e..445c2556403e26762a03a3bb49af4911d9d8cfca 100644
+--- a/crates/ui-egui/src/grid.rs
++++ b/crates/ui-egui/src/grid.rs
+@@ -214,7 +214,7 @@ fn numfmt_color(c: gridcraft_engine::numfmt::FormatColor) -> Color32 {
+     }
+ }
+ 
+-fn look(wb: &Workbook, si: usize, sh: &Sheet, c: CellRef, cf: &mut CfCache) -> (Look, Option<CfLook>) {
++fn look(wb: &Workbook, si: usize, sh: &Sheet, c: CellRef, cf: &mut CfCache, t: &Tokens) -> (Look, Option<CfLook>) {
+     let mut style = wb.styles.get(sh.style_id(c)).clone();
+     if let Some(t) = sh.table_at(c) {
+         style = gridcraft_engine::tables::table_cell_style(wb, si, t, c);
+@@ -271,7 +271,7 @@ fn look(wb: &Workbook, si: usize, sh: &Sheet, c: CellRef, cf: &mut CfCache) -> (
+     {
+         fill = Some(theme::color32(rgb));
+     }
+-    let text_color = col32(style.font.color, wb, Color32::BLACK);
++    let text_color = col32(style.font.color, wb, t.automatic_cell_text(fill));
+     (Look { style, fill, text_color }, cfl)
+ }
+ 
+@@ -534,11 +534,11 @@ fn paint_quadrant(p: &Painter, geo: &Geo, wb: &Workbook, si: usize, sh: &Sheet,
+             Some(m) => (geo.range_rect(sh, m), m.start),
+             None => (geo.cell_rect(sh, c), c),
+         };
+-        let (lk, cfl) = look(wb, si, sh, anchor, cf);
++        let (lk, cfl) = look(wb, si, sh, anchor, cf, t);
+         if let Some(f) = lk.fill {
+             p.rect_filled(rect.expand(0.0), 0.0, f);
+         } else if in_merge(c).is_some() {
+-            p.rect_filled(rect.shrink(0.5), 0.0, Color32::WHITE);
++            p.rect_filled(rect.shrink(0.5), 0.0, t.grid_bg);
+         }
+         looks.push((anchor, rect, lk, cfl));
+     }
+@@ -769,14 +769,14 @@ fn paint_quadrant(p: &Painter, geo: &Geo, wb: &Workbook, si: usize, sh: &Sheet,
+             if line.is_none() {
+                 continue;
+             }
+-            let col = col32(line.color, wb, Color32::BLACK);
++            let col = col32(line.color, wb, t.cell_text);
+             paint_border(p, pts, line.style, col);
+         }
+         if !b.diag_down.is_none() {
+-            paint_border(p, [rect.left_top(), rect.right_bottom()], b.diag_down.style, col32(b.diag_down.color, wb, Color32::BLACK));
++            paint_border(p, [rect.left_top(), rect.right_bottom()], b.diag_down.style, col32(b.diag_down.color, wb, t.cell_text));
+         }
+         if !b.diag_up.is_none() {
+-            paint_border(p, [rect.left_bottom(), rect.right_top()], b.diag_up.style, col32(b.diag_up.color, wb, Color32::BLACK));
++            paint_border(p, [rect.left_bottom(), rect.right_top()], b.diag_up.style, col32(b.diag_up.color, wb, t.cell_text));
+         }
+         // Comment / note indicator.
+         if let Some(cm) = sh.comments.get(c) {
+@@ -1747,19 +1747,23 @@ fn in_cell_editor(app: &mut SheetApp, ui: &mut egui::Ui, geo: &Geo, sh: &Sheet,
+     let st = wb.styles.get(sh.style_id(cell)).clone();
+     let size = st.font.size * 96.0 / 72.0 * geo.z;
+     let font = FontId::new(size, theme::cell_family(&st.font.name, st.font.bold, st.font.italic));
+-    let text_w = ui.painter().layout_no_wrap(ed.text.clone(), font.clone(), Color32::BLACK).size().x;
++    let t = Tokens::get(ui.ctx());
++    let explicit_fill = match st.fill.pattern {
++        PatternType::Solid => st.fill.fg.resolve(&wb.theme).map(theme::color32),
++        _ => None,
++    };
++    let fill = explicit_fill.unwrap_or(t.grid_bg);
++    let text_color = col32(st.font.color, wb, t.automatic_cell_text(explicit_fill));
++    let text_w = ui.painter().layout_no_wrap(ed.text.clone(), font.clone(), text_color).size().x;
+     let lines = ed.text.lines().count().max(1) as f32 + if ed.text.ends_with('\n') { 1.0 } else { 0.0 };
+     let w = (text_w + 14.0).max(rect.width()).min(geo.cells.right() - rect.left());
+     let h = (size * 1.3 * lines + 4.0).max(rect.height());
+     let erect = Rect::from_min_size(rect.min, vec2(w, h));
+-    let fill = match st.fill.pattern {
+-        PatternType::Solid => st.fill.fg.resolve(&wb.theme).map(theme::color32).unwrap_or(Color32::WHITE),
+-        _ => Color32::WHITE,
+-    };
+     ui.painter().rect_filled(erect, 0.0, fill);
+-    ui.painter().rect_stroke(erect.expand(1.0), 0.0, Stroke::new(2.0, Tokens::get(ui.ctx()).sel_border), StrokeKind::Middle);
++    ui.painter().rect_stroke(erect.expand(1.0), 0.0, Stroke::new(2.0, t.sel_border), StrokeKind::Middle);
+     let id = egui::Id::new("gridcraft.cell_editor");
+     let mut child = ui.new_child(egui::UiBuilder::new().max_rect(erect.shrink2(vec2(2.0, 1.0))));
++    child.visuals_mut().override_text_color = Some(text_color);
+     crate::formula_bar::editor_widget(app, &mut child, id, font, false, erect.width() - 4.0);
+ }
+ 
+diff --git a/crates/ui-egui/src/lib.rs b/crates/ui-egui/src/lib.rs
+index 1225eecdfece8480b8552c0045e4494016d4f51b..2c72cf289bbae404de5715612d0c4405f81cc39f 100644
+--- a/crates/ui-egui/src/lib.rs
++++ b/crates/ui-egui/src/lib.rs
+@@ -43,6 +43,8 @@ pub struct UiState {
+     /// The manual preference, retained when following the system appearance.
+     pub dark: bool,
+     pub system_theme: bool,
++    /// Embedded view: only the editable grid, headers, and scrolling.
++    pub cells_only: bool,
+     pub ribbon_tab: String,
+     pub ribbon_collapsed: bool,
+     pub formula_bar: bool,
+@@ -62,6 +64,7 @@ impl Default for UiState {
+         UiState {
+             dark: false,
+             system_theme: false,
++            cells_only: false,
+             ribbon_tab: "Home".into(),
+             ribbon_collapsed: false,
+             formula_bar: true,
+@@ -290,6 +293,10 @@ impl SheetApp {
+     /// UI-only commands (dialogs, view toggles that aren't saved in the file).
+     fn run_ui_command(&mut self, id: &str, p: &Json) -> Option<Result<Json, String>> {
+         let r = match id {
++            "view.cellsOnly" => {
++                self.ui.cells_only = p.get("on").and_then(Json::as_bool).unwrap_or(!self.ui.cells_only);
++                Ok(json!({"on": self.ui.cells_only}))
++            }
+             "ui.ribbonTab" => {
+                 self.ui.ribbon_tab = p.get("tab").and_then(Json::as_str).unwrap_or("Home").to_string();
+                 Ok(Json::Null)
+@@ -605,18 +612,20 @@ impl SheetApp {
+         // The language the widgets translate with this frame (see `i18n::current`).
+         i18n::set_current(&ctx, self.ui.language);
+         let t = theme::Tokens::get(&ctx);
+-        self.ribbon_keys(&ctx);
+-        ribbon::title_bar(self, ui);
+-        ribbon::show(self, ui);
+-        if self.ui.formula_bar {
+-            formula_bar::show(self, ui);
+-        }
+-        if self.ui.status_bar {
+-            tabs::status_bar(self, ui);
+-        }
+-        tabs::sheet_tabs(self, ui);
+-        pivot_pane::show(self, ui);
+-        panes::show(self, ui);
++        if !self.ui.cells_only {
++            self.ribbon_keys(&ctx);
++            ribbon::title_bar(self, ui);
++            ribbon::show(self, ui);
++            if self.ui.formula_bar {
++                formula_bar::show(self, ui);
++            }
++            if self.ui.status_bar {
++                tabs::status_bar(self, ui);
++            }
++            tabs::sheet_tabs(self, ui);
++            pivot_pane::show(self, ui);
++            panes::show(self, ui);
++        }
+         egui::CentralPanel::default().frame(egui::Frame::NONE.fill(t.grid_bg)).show(ui, |ui| {
+             let g0 = now_ms();
+             grid::show(self, ui);
+diff --git a/crates/ui-egui/src/theme.rs b/crates/ui-egui/src/theme.rs
+index 219e2d289b8b79441cbbdfa8acad07ccacf5872d..35f4861ba648dc79435f0ebd0e00b7f983ac2bfc 100644
+--- a/crates/ui-egui/src/theme.rs
++++ b/crates/ui-egui/src/theme.rs
+@@ -98,8 +98,8 @@ impl Tokens {
+             hover: Color32::from_rgb(0x42, 0x42, 0x42),
+             pressed: Color32::from_rgb(0x4D, 0x4D, 0x4D),
+             separator: Color32::from_rgb(0x48, 0x48, 0x48),
+-            grid_bg: Color32::WHITE,
+-            gridline: Color32::from_rgb(0xE1, 0xE1, 0xE1),
++            grid_bg: Color32::from_rgb(0x20, 0x20, 0x20),
++            gridline: Color32::from_rgb(0x38, 0x38, 0x38),
+             header_bg: Color32::from_rgb(0x30, 0x30, 0x30),
+             header_text: Color32::from_rgb(0xCC, 0xCC, 0xCC),
+             header_line: Color32::from_rgb(0x45, 0x45, 0x45),
+@@ -113,7 +113,7 @@ impl Tokens {
+             tab_bar: Color32::from_rgb(0x29, 0x29, 0x29),
+             tab_active: Color32::from_rgb(0x3A, 0x3A, 0x3A),
+             status_bar: Color32::from_rgb(0x29, 0x29, 0x29),
+-            cell_text: Color32::BLACK,
++            cell_text: Color32::from_rgb(0xEE, 0xEE, 0xEE),
+             menu_bg: Color32::from_rgb(0x30, 0x30, 0x30),
+             shadow: Color32::from_black_alpha(90),
+             danger: Color32::from_rgb(0xF1, 0x70, 0x5F),
+@@ -123,6 +123,18 @@ impl Tokens {
+     pub fn get(ctx: &egui::Context) -> Tokens {
+         if ctx.global_style().visuals.dark_mode { Tokens::dark() } else { Tokens::light() }
+     }
++
++    /// Automatic text follows the UI theme, with contrast against an explicit cell fill.
++    /// This affects painting only; workbook colours and exported styles are unchanged.
++    pub fn automatic_cell_text(&self, fill: Option<Color32>) -> Color32 {
++        let Some(fill) = fill.filter(|_| self.dark) else { return self.cell_text };
++        let linear = |channel: u8| {
++            let value = f32::from(channel) / 255.0;
++            if value <= 0.04045 { value / 12.92 } else { ((value + 0.055) / 1.055).powf(2.4) }
++        };
++        let luminance = 0.2126 * linear(fill.r()) + 0.7152 * linear(fill.g()) + 0.0722 * linear(fill.b());
++        if luminance > 0.179 { Color32::BLACK } else { Color32::WHITE }
++    }
+ }
+ 
+ pub const UI: &str = "ui";

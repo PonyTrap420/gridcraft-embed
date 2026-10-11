@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.5
+
+- Update the embedded engine to Gridcraft v0.5.0 and rebase the integration patch so the upstream release workflow can prepare it cleanly.
+- Preserve upstream system-theme support, ribbon keyboard shortcuts, and browser-safe edit profiling alongside the embedding API, cells-only mode, live browser clocks, and dark grid rendering.
+
 ## 0.1.4
 
 - Describe the React and JavaScript browser spreadsheet features in npm metadata, with relevant Excel, spreadsheet and XLSX search keywords.
