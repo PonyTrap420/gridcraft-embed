@@ -127,7 +127,22 @@ Verified with a production Vite build and a Chromium browser using WebGL2. WebGP
 
 ## Automatic upstream releases
 
-`.github/workflows/upstream-release.yml` checks upstream GitHub releases hourly (GitHub schedules may be delayed). Each new published release is processed in publication order, with a separate npm version. Drafts are ignored; prereleases publish under the `next` npm tag and stable releases under `latest`.
+`.github/workflows/upstream-release.yml` checks upstream GitHub releases every five minutes (at minutes 2, 7, 12, etc.). GitHub schedules may be delayed or dropped, so this is not a guaranteed five-minute detection time. Each new published release is processed in publication order, with a separate npm version. Drafts are ignored; prereleases publish under the `next` npm tag and stable releases under `latest`.
+
+The workflow also accepts an authenticated `repository_dispatch` event with `event_type: upstream-release`. An external release notifier can use this endpoint to start a check without waiting for the schedule:
+
+```http
+POST https://api.github.com/repos/PonyTrap420/gridcraft-embed/dispatches
+Authorization: Bearer <TOKEN>
+Accept: application/vnd.github+json
+Content-Type: application/json
+
+{"event_type":"upstream-release"}
+```
+
+Use a GitHub App token or a fine-grained personal access token scoped to this repository with Contents: write permission. Keep it in the notifier's secret store. The dispatch only requests a check: release metadata and source commits are fetched from upstream by the existing planner; payloads cannot override the source pin. Duplicate notifications use the same release state and concurrency group as scheduled and manual runs.
+
+Receiving upstream release webhooks requires a webhook or GitHub App installed on `storytold/gridcraft`, which needs its owners' cooperation. Adding a `release` trigger in this repository would only observe this repository's releases. No upstream webhook or external notifier is configured by this repository; without one, detection uses the schedule above. See GitHub's [webhook setup requirements](https://docs.github.com/en/webhooks/using-webhooks/creating-webhooks#creating-a-repository-webhook) and [repository dispatch API](https://docs.github.com/en/rest/repos/repos#create-a-repository-dispatch-event).
 
 The workflow resolves each release tag to an exact commit and fetches the upstream source into the ignored `.work/upstream` directory. It applies `patches/embed.patch` with a three-way merge, rebuilds Rust/WASM, generates dependency license notices, runs adapter and Chromium integration tests, and builds the production React demo before publishing. Patch conflicts or failed tests stop publication. `upstream-state.json` records the source commit, npm version, and publishing status; a failed publish is retried without skipping that release or minting another version. Rust source and generated notices are build inputs/outputs, not committed copies.
 

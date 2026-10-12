@@ -1,7 +1,9 @@
 name: Upstream release
 on:
+  repository_dispatch:
+    types: [upstream-release]
   schedule:
-    - cron: '17 * * * *'
+    - cron: '2-57/5 * * * *'
   workflow_dispatch:
     inputs:
       force_build:
