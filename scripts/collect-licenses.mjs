@@ -2,6 +2,7 @@ import {cpSync, existsSync, mkdirSync, readFileSync, readdirSync, rmSync, writeF
 import path from "node:path";
 import {run} from "./release-lib.mjs";
 import {getUpstreamSource, packageRoot} from "./upstream.mjs";
+import {pinnedLicenseSource} from "./license-lib.mjs";
 const metadata = JSON.parse(run("cargo", ["+1.95.0", "metadata", "--locked", "--format-version=1", "--filter-platform", "wasm32-unknown-unknown"], {cwd: getUpstreamSource()}));
 const nodes = new Map(metadata.resolve.nodes.map(node => [node.id, node]));
 const root = metadata.packages.find(pkg => pkg.name === "gridcraft-web");
@@ -20,15 +21,14 @@ for (const pkg of metadata.packages.filter(pkg => visited.has(pkg.id) && pkg.sou
   mkdirSync(target, {recursive: true});
   for (const name of new Set(files)) cpSync(path.join(source, name), path.join(target, name), {recursive: true});
   if (!files.length) {
-    // Some crate archives omit workspace-level licenses. Retrieve those at the
-    // crate's exact recorded source commit, retaining upstream copyright notices.
+    // Some dependencies keep licenses at the repository root. Retrieve them at
+    // Cargo's resolved Git commit or the crate archive's recorded source commit.
     const vcsFile = path.join(source, ".cargo_vcs_info.json");
     const vcs = existsSync(vcsFile) ? JSON.parse(readFileSync(vcsFile, "utf8")) : null;
-    const repo = /^https:\/\/github\.com\/([^/]+)\/([^/#]+?)(?:\.git)?(?:\/.*)?$/.exec(pkg.repository ?? "");
-    if (!repo || !/^[a-f0-9]{40}$/.test(vcs?.git?.sha1 ?? "")) throw new Error(`Pinned license source missing for ${pkg.name}@${pkg.version}`);
+    const licenseSource = pinnedLicenseSource(pkg, vcs);
     const candidates = ["LICENSE", "LICENSE-MIT", "LICENSE-APACHE", "LICENSE.md", "LICENSE.txt", "COPYING"];
     const found = await Promise.all(candidates.map(async name => {
-      const response = await fetch(`https://raw.githubusercontent.com/${repo[1]}/${repo[2]}/${vcs.git.sha1}/${name}`);
+      const response = await fetch(`${licenseSource}/${name}`);
       if (response.status === 404) return false;
       if (!response.ok) throw new Error(`License fetch failed: ${response.status} for ${pkg.name}/${name}`);
       writeFileSync(path.join(target, name), await response.text());
