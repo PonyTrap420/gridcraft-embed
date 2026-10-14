@@ -110,7 +110,8 @@ jobs:
       - name: Install matching wasm-bindgen
         run: node scripts/install-bindgen.mjs
       - name: Fetch locked dependencies
-        run: cargo +1.95.0 fetch --manifest-path .work/upstream/Cargo.toml --target wasm32-unknown-unknown --locked
+        # Cargo's offline workspace resolution also needs manifests for native targets.
+        run: cargo +1.95.0 fetch --manifest-path .work/upstream/Cargo.toml --locked
       - id: compile
         name: Compile candidate browser runtime
         env:

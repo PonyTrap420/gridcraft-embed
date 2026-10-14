@@ -22,6 +22,8 @@ Versions 0.1.1 and 0.1.2 were published to npm and their registry integrity matc
 
 ## Release automation
 
+The first CI run for the crate separation failed immediately at offline compilation. A fresh local Cargo cache reproduced a missing native-platform dependency after a WASM-only fetch. Fetching the complete locked workspace then passed the same offline release build from that cache. The workflow fetch step now covers all targets, and build failures emit their compiler diagnostics as GitHub error annotations.
+
 On 2026-10-15, the independent embedding crate passed Rust 1.95 WASM compilation, matching wasm-bindgen generation, license collection for 167 packages, all 16 tests, strict TypeScript checking, production bundling, Chromium workbook/UI checks and npm packing. The isolation check deliberately replaced upstream's browser module with `compile_error!`; the owned crate still built, and the original source was restored and verified.
 
 An isolated updater fixture prepared pending package 0.1.8 from the current engine pin, retained locked upstream dependencies, and left upstream's browser application untouched. The published 0.1.7 state remained unchanged. Candidate tests cover failed-release deduplication, changed integration inputs, manual retries, retryable infrastructure failures, persistence through a simulated GitHub branch store, and rejection of mismatched package/source artifacts. The planner also ran against public GitHub release data, and the actual package/source archive passed checksum-receipt verification. This fixture did not publish 0.1.8.
