@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.7
+
+- Update the embedded engine to Gridcraft v0.7.0 and rebase the integration patch to preserve upstream Center Across Selection alongside dark grid rendering.
+- Include the upstream browser host module in the WASM library so the new browser shell compiles with the embedding API.
+
 ## 0.1.5
 
 - Update the embedded engine to Gridcraft v0.5.0 and rebase the integration patch so the upstream release workflow can prepare it cleanly.

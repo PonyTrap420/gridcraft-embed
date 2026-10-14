@@ -1,5 +1,5 @@
 diff --git a/apps/gridcraft-web/Cargo.toml b/apps/gridcraft-web/Cargo.toml
-index 0f69e38e7b7c2b8949b949f90bbbe6da17a6fdad..dd7824921ddafb6cd77571a559215bdf8705b226 100644
+index eac6c1354be7111ad0f904cb1c20225bc742fecc..43e972adc13cdc8501f2572758ba6dc808decd41 100644
 --- a/apps/gridcraft-web/Cargo.toml
 +++ b/apps/gridcraft-web/Cargo.toml
 @@ -6,6 +6,9 @@ edition.workspace = true
@@ -176,10 +176,10 @@ index 0000000000000000000000000000000000000000..3140a53c4198041e79a59ceb9e02f244
 +}
 diff --git a/apps/gridcraft-web/src/lib.rs b/apps/gridcraft-web/src/lib.rs
 new file mode 100644
-index 0000000000000000000000000000000000000000..d391efb92712364b048c502e96e6bf3732c661ed
+index 0000000000000000000000000000000000000000..dddae1a0109203e8f2cb7fc6ef54f99e4cd1af58
 --- /dev/null
 +++ b/apps/gridcraft-web/src/lib.rs
-@@ -0,0 +1,10 @@
+@@ -0,0 +1,12 @@
 +//! Embeddable browser UI and command API. The standalone binary is unchanged.
 +#![forbid(unsafe_code)]
 +#![deny(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
@@ -187,14 +187,16 @@ index 0000000000000000000000000000000000000000..d391efb92712364b048c502e96e6bf37
 +#[cfg(target_arch = "wasm32")]
 +pub mod web;
 +#[cfg(target_arch = "wasm32")]
++mod host;
++#[cfg(target_arch = "wasm32")]
 +mod embed;
 +#[cfg(target_arch = "wasm32")]
 +pub use embed::*;
 diff --git a/apps/gridcraft-web/src/web.rs b/apps/gridcraft-web/src/web.rs
-index e1350a1c44499a96a070f0a7567893634fe818fd..99c574169446adc2f3043487d219168fddf9f458 100644
+index c0fcb22da2c0806b1c422deba38c60c6a1629a88..5afd419c9f517490d629255c1d2d009bffa0e9ac 100644
 --- a/apps/gridcraft-web/src/web.rs
 +++ b/apps/gridcraft-web/src/web.rs
-@@ -101,7 +101,7 @@ impl eframe::App for WebShell {
+@@ -127,7 +127,7 @@ impl eframe::App for WebShell {
      }
  }
  
@@ -204,10 +206,10 @@ index e1350a1c44499a96a070f0a7567893634fe818fd..99c574169446adc2f3043487d219168f
      let picture_ctx = ctx.clone();
      Services {
 diff --git a/crates/ui-egui/src/formula_bar.rs b/crates/ui-egui/src/formula_bar.rs
-index 83278b1904ffa31f31f5b58cfd145e13aa724aa3..fb4157b47ab1bc996417c8161d55a6792f9ffcd9 100644
+index 7f1ad87fc145a9a61a1ba957a8606b6b0b5672a0..bcea32c41c8c4ccb21845c5b99d1052953432d16 100644
 --- a/crates/ui-egui/src/formula_bar.rs
 +++ b/crates/ui-egui/src/formula_bar.rs
-@@ -253,7 +253,11 @@ pub fn editor_widget(app: &mut SheetApp, ui: &mut egui::Ui, id: egui::Id, font:
+@@ -259,7 +259,11 @@ pub fn editor_widget(app: &mut SheetApp, ui: &mut egui::Ui, id: egui::Id, font:
      // The text widget.
      let refs = formula_refs(&ed.text);
      let text_color = Tokens::get(ui.ctx()).text;
@@ -221,11 +223,11 @@ index 83278b1904ffa31f31f5b58cfd145e13aa724aa3..fb4157b47ab1bc996417c8161d55a679
      let mut layouter = move |ui: &egui::Ui, buf: &dyn egui::TextBuffer, wrap_width: f32| {
          let s = buf.as_str();
 diff --git a/crates/ui-egui/src/grid.rs b/crates/ui-egui/src/grid.rs
-index d0eef856681c6a104a9cbb4b951cb770e49c2356..c6c862b27af3c6fb535791cc30c5473d9f6a782a 100644
+index 97b787ef3308dcd4418a62fbcb85a2f3b2715c62..09d239ffc0a3553dfcfb121d09935a0861b752c1 100644
 --- a/crates/ui-egui/src/grid.rs
 +++ b/crates/ui-egui/src/grid.rs
-@@ -368,7 +368,7 @@ fn numfmt_color(c: gridcraft_engine::numfmt::FormatColor) -> Color32 {
-     }
+@@ -455,7 +455,7 @@ fn center_across_end(start: u32, limit: u32, continues: impl Fn(u32) -> bool) ->
+     end
  }
  
 -fn look(wb: &Workbook, si: usize, sh: &Sheet, c: CellRef, cf: &mut CfCache) -> (Look, Option<CfLook>) {
@@ -233,7 +235,7 @@ index d0eef856681c6a104a9cbb4b951cb770e49c2356..c6c862b27af3c6fb535791cc30c5473d
      let mut style = wb.styles.get(sh.style_id(c)).clone();
      if let Some(t) = sh.table_at(c) {
          style = gridcraft_engine::tables::table_cell_style(wb, si, t, c);
-@@ -425,7 +425,7 @@ fn look(wb: &Workbook, si: usize, sh: &Sheet, c: CellRef, cf: &mut CfCache) -> (
+@@ -512,7 +512,7 @@ fn look(wb: &Workbook, si: usize, sh: &Sheet, c: CellRef, cf: &mut CfCache) -> (
      {
          fill = Some(theme::color32(rgb));
      }
@@ -242,7 +244,7 @@ index d0eef856681c6a104a9cbb4b951cb770e49c2356..c6c862b27af3c6fb535791cc30c5473d
      (Look { style, fill, text_color }, cfl)
  }
  
-@@ -888,11 +888,11 @@ pub(crate) fn paint_quadrant(
+@@ -1081,11 +1081,11 @@ pub(crate) fn paint_quadrant(
              Some(m) => (geo.range_rect(sh, m), m.start),
              None => (geo.cell_rect(sh, c), c),
          };
@@ -256,7 +258,7 @@ index d0eef856681c6a104a9cbb4b951cb770e49c2356..c6c862b27af3c6fb535791cc30c5473d
          }
          looks.push((anchor, rect, lk, cfl));
      }
-@@ -1121,7 +1121,7 @@ pub(crate) fn paint_quadrant(
+@@ -1322,7 +1322,7 @@ pub(crate) fn paint_quadrant(
              // A merged area's outline lives on the cells along each of its edges (Excel writes the
              // right edge on the last column's cells and the bottom edge on the last row's), so each
              // edge is drawn cell by cell from the cell it belongs to.
@@ -265,7 +267,7 @@ index d0eef856681c6a104a9cbb4b951cb770e49c2356..c6c862b27af3c6fb535791cc30c5473d
              None => vec![
                  (b.top, [rect.left_top(), rect.right_top()]),
                  (b.bottom, [rect.left_bottom(), rect.right_bottom()]),
-@@ -1133,14 +1133,14 @@ pub(crate) fn paint_quadrant(
+@@ -1334,14 +1334,14 @@ pub(crate) fn paint_quadrant(
              if line.is_none() {
                  continue;
              }
@@ -283,7 +285,7 @@ index d0eef856681c6a104a9cbb4b951cb770e49c2356..c6c862b27af3c6fb535791cc30c5473d
          }
          // Comment / note indicator.
          if let Some(cm) = sh.comments.get(c) {
-@@ -1215,6 +1215,7 @@ fn merged_edges(
+@@ -1416,6 +1416,7 @@ fn merged_edges(
      rows: (u32, u32),
      cols: (u32, u32),
      cf: &mut CfCache,
@@ -291,7 +293,7 @@ index d0eef856681c6a104a9cbb4b951cb770e49c2356..c6c862b27af3c6fb535791cc30c5473d
  ) -> Vec<(BorderLine, [Pos2; 2])> {
      let mut out = Vec::new();
      let (cs, ce) = (m.start.col.max(cols.0), m.end.col.min(cols.1));
-@@ -1223,8 +1224,8 @@ fn merged_edges(
+@@ -1424,8 +1425,8 @@ fn merged_edges(
              continue;
          }
          let (x0, x1) = (geo.x(sh, col), geo.x(sh, col.saturating_add(1)));
@@ -302,7 +304,7 @@ index d0eef856681c6a104a9cbb4b951cb770e49c2356..c6c862b27af3c6fb535791cc30c5473d
          out.push((top, [pos2(x0, rect.top()), pos2(x1, rect.top())]));
          out.push((bottom, [pos2(x0, rect.bottom()), pos2(x1, rect.bottom())]));
      }
-@@ -1234,8 +1235,8 @@ fn merged_edges(
+@@ -1435,8 +1436,8 @@ fn merged_edges(
              continue;
          }
          let (y0, y1) = (geo.y(sh, row), geo.y(sh, row.saturating_add(1)));
@@ -313,7 +315,7 @@ index d0eef856681c6a104a9cbb4b951cb770e49c2356..c6c862b27af3c6fb535791cc30c5473d
          out.push((left, [pos2(rect.left(), y0), pos2(rect.left(), y1)]));
          out.push((right, [pos2(rect.right(), y0), pos2(rect.right(), y1)]));
      }
-@@ -2449,16 +2450,19 @@ fn in_cell_editor(app: &mut SheetApp, ui: &mut egui::Ui, geo: &Geo, sh: &Sheet,
+@@ -2702,16 +2703,19 @@ fn in_cell_editor(app: &mut SheetApp, ui: &mut egui::Ui, geo: &Geo, sh: &Sheet,
      let st = wb.styles.get(sh.style_id(cell)).clone();
      let size = st.font.size * 96.0 / 72.0 * geo.z;
      let font = FontId::new(size, theme::cell_family(&st.font.name, st.font.bold, st.font.italic));
@@ -338,7 +340,7 @@ index d0eef856681c6a104a9cbb4b951cb770e49c2356..c6c862b27af3c6fb535791cc30c5473d
      let split = pos2(geo.cells.left() + geo.frozen_w, geo.cells.top() + geo.frozen_h);
      let quadrant = Rect::from_min_max(
          pos2(if cell.col >= geo.fc { split.x } else { geo.cells.left() }, if cell.row >= geo.fr { split.y } else { geo.cells.top() }),
-@@ -2467,10 +2471,11 @@ fn in_cell_editor(app: &mut SheetApp, ui: &mut egui::Ui, geo: &Geo, sh: &Sheet,
+@@ -2720,10 +2724,11 @@ fn in_cell_editor(app: &mut SheetApp, ui: &mut egui::Ui, geo: &Geo, sh: &Sheet,
      let clip = ui.clip_rect().intersect(quadrant);
      let painter = ui.painter().with_clip_rect(clip);
      painter.rect_filled(erect, 0.0, fill);
@@ -352,7 +354,7 @@ index d0eef856681c6a104a9cbb4b951cb770e49c2356..c6c862b27af3c6fb535791cc30c5473d
  }
  
 diff --git a/crates/ui-egui/src/lib.rs b/crates/ui-egui/src/lib.rs
-index 0b19b2551d85ea93dab3211e34f9e3f7cac63354..d6a72fa3813bc2c910de17ef4a3ab8fb2c7a700f 100644
+index f96cdac3c07e29a1722461041a4324b2e1bd804b..0f2d716d992197061a532b6f4a80198b9af9ec71 100644
 --- a/crates/ui-egui/src/lib.rs
 +++ b/crates/ui-egui/src/lib.rs
 @@ -51,6 +51,8 @@ pub struct UiState {
@@ -364,7 +366,7 @@ index 0b19b2551d85ea93dab3211e34f9e3f7cac63354..d6a72fa3813bc2c910de17ef4a3ab8fb
      pub ribbon_tab: String,
      pub ribbon_collapsed: bool,
      pub formula_bar_expanded: bool,
-@@ -94,6 +96,7 @@ impl Default for UiState {
+@@ -97,6 +99,7 @@ impl Default for UiState {
          UiState {
              dark: false,
              system_theme: false,
@@ -372,7 +374,7 @@ index 0b19b2551d85ea93dab3211e34f9e3f7cac63354..d6a72fa3813bc2c910de17ef4a3ab8fb
              ribbon_tab: "Home".into(),
              ribbon_collapsed: false,
              formula_bar_expanded: false,
-@@ -466,6 +469,10 @@ impl SheetApp {
+@@ -573,6 +576,10 @@ impl SheetApp {
      /// UI-only commands (dialogs, view toggles that aren't saved in the file).
      fn run_ui_command(&mut self, id: &str, p: &Json) -> Option<Result<Json, String>> {
          let r = match id {
@@ -383,7 +385,7 @@ index 0b19b2551d85ea93dab3211e34f9e3f7cac63354..d6a72fa3813bc2c910de17ef4a3ab8fb
              "ui.printSettings" => printing::settings(&mut self.printing, p, self.services.printers.as_ref()),
              "ui.printSubmit" => self.submit_print(p.clone()),
              "ui.ribbonTab" => {
-@@ -992,25 +999,29 @@ impl SheetApp {
+@@ -1103,25 +1110,29 @@ impl SheetApp {
          // The language the widgets translate with this frame (see `i18n::current`).
          i18n::set_current(&ctx, self.ui.language);
          let t = theme::Tokens::get(&ctx);

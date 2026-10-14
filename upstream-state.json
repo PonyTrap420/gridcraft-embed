@@ -1,12 +1,11 @@
 {
   "repository": "storytold/gridcraft",
-  "patchBase": "fc45b7f6d8ab79ef20f74e3c8347a2fd731e6af5",
-  "releaseId": 410835173,
-  "tag": "v0.6.1",
-  "commit": "fc45b7f6d8ab79ef20f74e3c8347a2fd731e6af5",
-  "publishedAt": "2026-10-12T17:07:30Z",
-  "packageVersion": "0.1.6",
+  "patchBase": "d9d09f0baa912e88c5111107903fc8c640214b57",
+  "releaseId": 412885314,
+  "tag": "v0.7.0",
+  "commit": "d9d09f0baa912e88c5111107903fc8c640214b57",
+  "publishedAt": "2026-10-14T15:36:59Z",
+  "packageVersion": "0.1.7",
   "prerelease": false,
-  "status": "published",
-  "npmIntegrity": "sha512-er0aulZsT9sDDbpvmnwvGkZzik3ShMPPMLsb8k04aPZ/yB9BbJsr/Jvf0LaWNmLSNpnF0XAf0+bsZnB4pLAQug=="
+  "status": "pending"
 }

@@ -22,6 +22,8 @@ Versions 0.1.1 and 0.1.2 were published to npm and their registry integrity matc
 
 ## Release automation
 
+On 2026-10-14, the Gridcraft v0.7.0 repair passed clean source fetching and patch application, the release updater and prepared-source reuse, Rust 1.95 WASM compilation, matching wasm-bindgen generation, license collection for 167 packages, all 10 tests, strict TypeScript checking, production demo bundling, npm packing, and Chromium workbook/UI integration checks. The patch preserves upstream Center Across Selection and includes the new browser host module in the library. Package 0.1.7 remains pending until the release workflow completes publication. Pushes to the integration patch, release scripts, or workflow on `main` now trigger an immediate release check.
+
 The [GitHub Actions validation run](https://github.com/PonyTrap420/gridcraft-embed/actions/runs/37962031361) passed on Ubuntu with Node 24: clean Rust/WASM compilation, dependency license collection, six adapter/release tests, production bundling, Chromium workbook/UI integration tests, and release artifact packing. It used `force_build=true` against the current upstream baseline, so it did not publish a duplicate npm version.
 
 The update script was also exercised in an isolated checkout against the pinned upstream release. All integration patches applied cleanly, the exact source commit was retained, and package/lockfile/state updates prepared a pending next version. Production release state was unchanged by that fixture.

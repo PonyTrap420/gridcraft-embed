@@ -1,5 +1,11 @@
 name: Upstream release
 on:
+  push:
+    branches: [main]
+    paths:
+      - 'patches/**'
+      - 'scripts/**'
+      - '.github/workflows/upstream-release.yml'
   repository_dispatch:
     types: [upstream-release]
   schedule:

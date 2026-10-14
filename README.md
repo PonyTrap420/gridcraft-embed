@@ -118,7 +118,7 @@ This embeds Gridcraft's existing ribbon, formula bar, sheets, formulas, formatti
 
 Verified with a production Vite build and a Chromium browser using WebGL2. WebGPU, Safari, Firefox, Next.js builds, large workbooks, long-running stability and assistive technology behavior have not been validated here.
 
-- WASM is about 17.4 MB before compression and 6.0 MB with gzip; load it on demand and use HTTP compression.
+- WASM is about 21.0 MB before compression and 7.2 MB with gzip; load it on demand and use HTTP compression.
 - Browser imports/exports currently convert bytes through base64, increasing memory use for large files. Commands run on the browser's main thread.
 - The existing UI can drop very fast consecutive characters delivered within one animation frame. Normal-speed keyboard entry was verified; this upstream input issue remains open. Treat this as a prototype pending an input-handling fix.
 - Browser date functions now use the real UTC clock, matching the upstream engine's UTC semantics rather than a fixed date. Date-time timezone parity with Excel has not been audited.
@@ -128,6 +128,8 @@ Verified with a production Vite build and a Chromium browser using WebGL2. WebGP
 ## Automatic upstream releases
 
 `.github/workflows/upstream-release.yml` checks upstream GitHub releases every five minutes (at minutes 2, 7, 12, etc.). GitHub schedules may be delayed or dropped, so this is not a guaranteed five-minute detection time. Each new published release is processed in publication order, with a separate npm version. Drafts are ignored; prereleases publish under the `next` npm tag and stable releases under `latest`.
+
+Pushing changes to the integration patch, release scripts, or this workflow on `main` also starts a check, so a repaired release can retry immediately.
 
 The workflow also accepts an authenticated `repository_dispatch` event with `event_type: upstream-release`. An external release notifier can use this endpoint to start a check without waiting for the schedule:
 
