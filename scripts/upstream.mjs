@@ -1,8 +1,9 @@
 import {createHash} from "node:crypto";
-import {existsSync, mkdirSync, readFileSync} from "node:fs";
+import {existsSync, mkdirSync, readFileSync, rmSync} from "node:fs";
 import {fileURLToPath} from "node:url";
 import path from "node:path";
 import {readJson, run, writeJson} from "./release-lib.mjs";
+import {directoryDigest, installEmbedding} from "./embedding.mjs";
 
 export const packageRoot = fileURLToPath(new URL("../", import.meta.url));
 const digest = value => createHash("sha256").update(value).digest("hex");
@@ -22,10 +23,13 @@ export function resolveUpstreamTag(repository, tag) {
 export function prepareUpstream(state = readJson(path.join(packageRoot, "upstream-state.json")), {root = packageRoot, url = repositoryUrl(state.repository)} = {}) {
   if (![state.commit, state.patchBase].every(value => /^[a-f0-9]{40}$/.test(value))) throw new Error("Upstream commits must be pinned SHA-1 hashes");
   const work = path.resolve(root, ".work");
+  rmSync(path.join(work, "compatibility-failure.json"), {force: true});
   const source = path.join(work, "upstream");
   const receiptPath = path.join(work, "upstream-prepared.json");
   const patch = path.resolve(root, "patches/embed.patch");
-  const identity = {url, commit: state.commit, patchDigest: digest(readFileSync(patch))};
+  const embedding = path.join(root, "rust/embed");
+  const identity = {url, commit: state.commit, patchDigest: digest(readFileSync(patch)),
+    embeddingDigest: existsSync(embedding) ? directoryDigest(embedding) : null};
   const git = args => run("git", args, {cwd: source});
   if (existsSync(source)) {
     const receipt = existsSync(receiptPath) ? readJson(receiptPath) : {};
@@ -51,7 +55,13 @@ export function prepareUpstream(state = readJson(path.join(packageRoot, "upstrea
     const basePath = /^a\/(.+) b\//.exec(block)?.[1];
     if (basePath && !/^new file mode /m.test(block)) git(["show", `${state.patchBase}:${basePath}`]);
   }
-  git(["apply", "--3way", patch]);
+  try {
+    git(["apply", "--3way", patch]);
+    if (identity.embeddingDigest) installEmbedding(source, embedding);
+  } catch (error) {
+    writeJson(path.join(work, "compatibility-failure.json"), {stage: "patch", commit: state.commit});
+    throw error;
+  }
   git(["add", "-A"]);
   writeJson(receiptPath, {...identity, tree: git(["write-tree"])});
   console.log(`Prepared ${state.repository}@${state.tag ?? state.commit} in .work/upstream`);

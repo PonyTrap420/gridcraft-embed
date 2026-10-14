@@ -16,4 +16,5 @@ None: every bundled asset is original to GridCraft. Builds made with craft-fonts
 (CRAFT_FONTS_DIR) embed the fonts listed in ATTRIBUTION.md under the SIL Open Font License 1.1.
 
 Gridcraft Embed is an independently maintained React/JavaScript integration.
-Integration changes are maintained in patches/embed.patch.
+UI hooks are maintained in patches/embed.patch; the embedding crate is maintained in rust/embed.
+The owned browser services derive from Gridcraft's MIT OR Apache-2.0 browser services.

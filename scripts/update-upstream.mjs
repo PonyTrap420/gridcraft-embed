@@ -6,9 +6,10 @@ const plan = readJson(".work/release-plan.json");
 if (!plan.update) process.exit(0);
 const previous = readJson("upstream-state.json");
 const commit = resolveUpstreamTag(previous.repository, plan.release.tag_name);
+if (plan.commit && plan.commit !== commit) throw new Error("Upstream tag moved after planning; refusing to build a different candidate");
 const checkout = prepareUpstream({...previous, commit, tag: plan.release.tag_name});
 for (const name of ["LICENSE-MIT", "LICENSE-APACHE"]) cpSync(path.join(checkout, name), name);
-writeFileSync("NOTICE", readFileSync(path.join(checkout, "NOTICE"), "utf8") + "\nGridcraft Embed is an independently maintained React/JavaScript integration.\nIntegration changes are maintained in patches/embed.patch.\n");
+writeFileSync("NOTICE", readFileSync(path.join(checkout, "NOTICE"), "utf8") + "\nGridcraft Embed is an independently maintained React/JavaScript integration.\nUI hooks are maintained in patches/embed.patch; the embedding crate is maintained in rust/embed.\nThe owned browser services derive from Gridcraft's MIT OR Apache-2.0 browser services.\n");
 const pkg = readJson("package.json");
 pkg.version = nextVersion(pkg.version, plan.release);
 pkg.gridcraftUpstream = {repository: previous.repository, releaseId: plan.release.id, tag: plan.release.tag_name, commit};
@@ -22,5 +23,5 @@ const state = {...previous, releaseId: plan.release.id, tag: plan.release.tag_na
   publishedAt: plan.release.published_at, prerelease: plan.release.prerelease, packageVersion: pkg.version, status: "pending"};
 delete state.npmIntegrity;
 writeJson("upstream-state.json", state);
-writeFileSync("UPSTREAM.md", `# Upstream provenance\n\nSource: https://github.com/${state.repository}\n\nPinned upstream release: [${state.tag}](${plan.release.html_url}).\n\nPinned commit: \`${commit}\`.\n\nRust source is fetched at this exact commit into the ignored .work/upstream directory during builds. It is not copied into this repository.\n\nThis independently maintained, unofficial React embedding preserves upstream licenses and contributor credits. Integration changes are maintained in patches/embed.patch against ${state.patchBase}. They add the browser embedding API, cells-only mode, and dark grid rendering. Browser clocks are provided by upstream. Dependency license notices are generated during builds and included in the npm package.\n`);
+writeFileSync("UPSTREAM.md", `# Upstream provenance\n\nSource: https://github.com/${state.repository}\n\nPinned upstream release: [${state.tag}](${plan.release.html_url}).\n\nPinned commit: \`${commit}\`.\n\nUpstream Rust source is fetched at this exact commit into the ignored .work/upstream directory during builds. The engine is not copied into this repository. Our embedding crate and browser services are maintained under rust/embed and installed into the fetched workspace during source preparation.\n\nThis independently maintained, unofficial React embedding preserves upstream licenses and contributor credits. The UI hooks for cells-only mode and dark grid rendering are maintained in patches/embed.patch against ${state.patchBase}. The embedding API and browser services live in our own crate, independent of upstream's standalone browser app. Browser clocks are provided by upstream. Dependency license notices are generated during builds and included in the npm package.\n`);
 console.log(`Prepared ${pkg.name}@${pkg.version} from ${state.tag} (${commit})`);

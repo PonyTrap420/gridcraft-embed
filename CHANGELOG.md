@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+- Move the embedding API and browser services into an owned Rust crate; remove all patches to upstream's standalone browser application.
+- Validate update candidates before promotion, verify tested artifact checksums, and record compatibility failures separately from the published source pin.
+- Wait on unchanged failed candidates until integration inputs change or a manual retry is requested; retain automatic retries for infrastructure failures.
+- Add a build test with deliberately broken upstream browser code and regression coverage for candidate failures, retries and artifact mismatches.
+
 ## 0.1.7
 
 - Update the embedded engine to Gridcraft v0.7.0 and rebase the integration patch to preserve upstream Center Across Selection alongside dark grid rendering.

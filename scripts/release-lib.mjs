@@ -17,13 +17,14 @@ export function nextVersion(version, release) {
   const base = `${match[1]}.${match[2]}.${Number(match[3]) + 1}`;
   return release.prerelease ? `${base}-upstream.${release.id}` : base;
 }
-export async function github(path, {method = "GET", body} = {}) {
+export async function github(path, {method = "GET", body, allowMissing = false} = {}) {
   const response = await fetch(`https://api.github.com${path}`, {
     method,
     headers: {Accept: "application/vnd.github+json", "X-GitHub-Api-Version": "2022-11-28", ...(process.env.GH_TOKEN ? {Authorization: `Bearer ${process.env.GH_TOKEN}`} : {})},
     body: body === undefined ? undefined : JSON.stringify(body),
   });
   if (response.status === 204) return null;
+  if (allowMissing && response.status === 404) return null;
   const data = await response.json();
   if (!response.ok) throw new Error(`GitHub ${method} ${path}: ${response.status} ${data.message}`);
   return data;

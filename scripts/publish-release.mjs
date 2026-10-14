@@ -1,11 +1,11 @@
-import {createHash} from "node:crypto";
-import {readFileSync} from "node:fs";
 import {github, readJson, registryVersion, run, writeJson} from "./release-lib.mjs";
+import {fileIntegrity, verifyValidation} from "./candidate-lib.mjs";
 const state = readJson("upstream-state.json");
 const pkg = readJson("package.json");
 if (state.status !== "pending" || state.packageVersion !== pkg.version) throw new Error("No pending release matches package.json");
 const filename = `${pkg.name}-${pkg.version}.tgz`;
-const integrity = `sha512-${createHash("sha512").update(readFileSync(`.work/artifacts/${filename}`)).digest("base64")}`;
+const integrity = fileIntegrity(`.work/artifacts/${filename}`);
+verifyValidation(readJson(".work/artifacts/validated-candidate.json"), state, pkg, integrity, fileIntegrity(".work/artifacts/source.tar.gz"));
 run("git", ["config", "user.name", "github-actions[bot]"]);
 run("git", ["config", "user.email", "41898282+github-actions[bot]@users.noreply.github.com"]);
 run("git", ["add", "package.json", "package-lock.json", "upstream-state.json", "UPSTREAM.md", "LICENSE-MIT", "LICENSE-APACHE", "NOTICE"]);

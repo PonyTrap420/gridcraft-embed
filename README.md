@@ -129,7 +129,7 @@ Verified with a production Vite build and a Chromium browser using WebGL2. WebGP
 
 `.github/workflows/upstream-release.yml` checks upstream GitHub releases every five minutes (at minutes 2, 7, 12, etc.). GitHub schedules may be delayed or dropped, so this is not a guaranteed five-minute detection time. Each new published release is processed in publication order, with a separate npm version. Drafts are ignored; prereleases publish under the `next` npm tag and stable releases under `latest`.
 
-Pushing changes to the integration patch, release scripts, or this workflow on `main` also starts a check, so a repaired release can retry immediately.
+Pushing changes to the integration crate, UI patch, adapters, tests, release scripts, manifests, source pin, or this workflow on `main` also starts validation. If no new release exists, this validates the current pin without publishing a duplicate version.
 
 The workflow also accepts an authenticated `repository_dispatch` event with `event_type: upstream-release`. An external release notifier can use this endpoint to start a check without waiting for the schedule:
 
@@ -146,15 +146,19 @@ Use a GitHub App token or a fine-grained personal access token scoped to this re
 
 Receiving upstream release webhooks requires a webhook or GitHub App installed on `storytold/gridcraft`, which needs its owners' cooperation. Adding a `release` trigger in this repository would only observe this repository's releases. No upstream webhook or external notifier is configured by this repository; without one, detection uses the schedule above. See GitHub's [webhook setup requirements](https://docs.github.com/en/webhooks/using-webhooks/creating-webhooks#creating-a-repository-webhook) and [repository dispatch API](https://docs.github.com/en/rest/repos/repos#create-a-repository-dispatch-event).
 
-The workflow resolves each release tag to an exact commit and fetches the upstream source into the ignored `.work/upstream` directory. It applies `patches/embed.patch` with a three-way merge, rebuilds Rust/WASM, generates dependency license notices, runs adapter and Chromium integration tests, and builds the production React demo before publishing. Patch conflicts or failed tests stop publication. `upstream-state.json` records the source commit, npm version, and publishing status; a failed publish is retried without skipping that release or minting another version. Rust source and generated notices are build inputs/outputs, not committed copies.
+The planner selects an upstream release and resolves its tag to an exact commit. A separate validation job fetches and patches that source, installs our `rust/embed` crate, builds WASM and dependency notices, runs adapter, isolation and Chromium tests, and builds the production demo. The isolation test deliberately makes upstream's standalone browser module uncompilable; the embedding crate must still build. The small UI patch only covers cells-only mode and theme rendering. Upstream's standalone browser application is not modified or compiled into our runtime.
 
-Publishing uses npm's GitHub trusted publisher for `PonyTrap420/gridcraft-embed`, workflow filename `upstream-release.yml`, with direct publishing enabled. No npm token is stored in GitHub. The repository variable `NPM_PUBLISH_ENABLED=true` enables release publication after this relationship has been configured. The workflow can also be dispatched manually; `force_build=true` checks the current release without publishing a duplicate version.
+Candidate changes stay in the validation job until all checks pass. The publish job verifies checksums for the tested package and source archive before promoting them. `upstream-state.json` records the released source commit, npm version, and publishing status; a failed publish retries the same package version.
+
+A patch, compilation, missing-license or test failure is recorded in `upstream-candidates.json` on the separate `upstream-candidates` branch. Later scheduled checks report that candidate as awaiting a fix instead of rebuilding the same known failure. The key includes the upstream release/commit and a fingerprint of our integration inputs. Changing those inputs automatically permits another attempt. Setup, dependency-download and license-network failures remain retryable. Failed candidates keep their place in publication order, so newer releases do not silently skip them; the released source pin stays unchanged.
+
+Publishing uses npm's GitHub trusted publisher for `PonyTrap420/gridcraft-embed`, workflow filename `upstream-release.yml`, with direct publishing enabled. No npm token is stored in GitHub. The repository variable `NPM_PUBLISH_ENABLED=true` enables release publication after this relationship has been configured. In **Actions → Upstream release → Run workflow**, `force_build=true` validates the current release when no update exists, and `retry_failed=true` explicitly retries a recorded failed candidate. Scheduled runs never override a recorded failure on their own.
 
 To reproduce a build, install Rust 1.95.0 and its `wasm32-unknown-unknown` target, then run `npm ci`, `npm run upstream:prepare`, `node scripts/install-bindgen.mjs`, `npm run build`, and `npm test`.
 
 ## Develop and rebuild
 
-This repository contains the JavaScript/React adapters, types, demo, tests, release scripts and the integration patch. `upstream-state.json` references the original Rust repository by exact commit. Builds fetch and patch that source automatically in `.work/upstream`; it stays out of Git. Rust 1.95.0 is used because the pinned egui dependencies require it, despite upstream's lower workspace `rust-version` declaration.
+This repository contains the JavaScript/React adapters, the owned embedding crate and browser services under `rust/embed`, types, demo, tests, release scripts and the UI integration patch. `upstream-state.json` references the original Rust repository by exact commit. Builds fetch that source into `.work/upstream`, apply the UI hooks, and copy our crate into its workspace. Only our local crate is added to the lockfile; upstream dependency versions, Git pins and checksums are retained and checked by Cargo's `--locked` build. The fetched engine checkout stays out of Git. Rust 1.95.0 is used because the pinned egui dependencies require it, despite upstream's lower workspace `rust-version` declaration.
 
 ```bash
 npm ci
@@ -163,11 +167,12 @@ npm run upstream:prepare
 node scripts/install-bindgen.mjs
 npm run build
 npm test
+npm run test:isolation
 npm run dev
 ```
 
 With the demo server running, `npm run test:browser` runs browser checks. Set `CHROME_PATH` to your browser executable if it is not at a standard Windows Chrome/Edge path, or install Playwright Chromium with `npx playwright install chromium`. `npm run demo:build` verifies a production bundle. `npm pack` produces a runtime-only tarball with WASM and license files; Rust sources, demo, tests and dev dependencies are excluded.
 
-`npm run build` generates both the browser runtime and the dependency license notices included in the npm package. The first source preparation requires network access. A matching prepared checkout is reused; changed pins, changed patches or local edits require a fresh `.work` directory. Existing checkout files are preserved on mismatch. Set `GRIDCRAFT_SOURCE` to your own modified upstream checkout or `WASM_BINDGEN` to a specific CLI executable. Keep the CLI version aligned with the lockfile.
+`npm run build` generates both the browser runtime and the dependency license notices included in the npm package. The first source preparation requires network access. A matching prepared checkout is reused; changed pins, patches, embedding sources or local edits require a fresh `.work/upstream` and receipt. Existing checkout files are preserved on mismatch. `GRIDCRAFT_SOURCE` can select a custom prepared checkout containing the UI hooks and `gridcraft-embed-wasm` crate. `WASM_BINDGEN` selects a CLI executable; keep its version aligned with the lockfile. `CARGO_TARGET_DIR` can select a shared build cache.
 
 See `UPSTREAM.md` for provenance and `VALIDATION.md` for results and remaining gaps.

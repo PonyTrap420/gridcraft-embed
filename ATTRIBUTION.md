@@ -6,6 +6,8 @@ The upstream source and its [asset inventory](https://github.com/storytold/gridc
 
 The npm package contains generated Rust dependency licenses and default-font notices under `dist/notices/`. These notices remain part of the distributed runtime even though generated files are ignored by Git.
 
+The browser services in `rust/embed/src/services.rs` derive from Gridcraft's browser services at the pinned source commit under MIT OR Apache-2.0. They are maintained here so embedding does not depend on upstream's standalone browser application.
+
 | Asset | Author | Source | License |
 |---|---|---|---|
 | `docs/images/demo-light.png` | PonyTrap420 integration; Gridcraft contributors for the rendered UI | Screenshot of this repository's React demo with an original sample workbook | MIT OR Apache-2.0 |

@@ -57,6 +57,7 @@
     "dev": "vite demo --host 127.0.0.1",
     "demo:build": "vite build demo",
     "test": "node --test test/*.test.mjs",
+    "test:isolation": "node test/isolation.mjs",
     "test:browser": "node test/browser.mjs"
   },
   "devDependencies": {
