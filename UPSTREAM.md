@@ -2,9 +2,9 @@
 
 Source: https://github.com/storytold/gridcraft
 
-Pinned upstream release: [v0.7.0](https://github.com/storytold/gridcraft/releases/tag/v0.7.0).
+Pinned upstream release: [v0.8.0](https://github.com/storytold/gridcraft/releases/tag/v0.8.0).
 
-Pinned commit: `d9d09f0baa912e88c5111107903fc8c640214b57`.
+Pinned commit: `823c56582d00be91e31b4f7f3680496cf89e84fb`.
 
 Upstream Rust source is fetched at this exact commit into the ignored .work/upstream directory during builds. The engine is not copied into this repository. Our embedding crate and browser services are maintained under rust/embed and installed into the fetched workspace during source preparation.
 
