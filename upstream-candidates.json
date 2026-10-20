@@ -1,0 +1,13 @@
+{
+  "version": 1,
+  "failures": {
+    "418516765:a2cc4b42cac6e2c41bae71fba4607300755a0b47:f936909d62dd62e81779a37a236f7330466c0f439f71c8b580bc36072db07df1": {
+      "commit": "a2cc4b42cac6e2c41bae71fba4607300755a0b47",
+      "fingerprint": "f936909d62dd62e81779a37a236f7330466c0f439f71c8b580bc36072db07df1",
+      "tag": "v0.9.0",
+      "stage": "patch",
+      "runUrl": "https://github.com/PonyTrap420/gridcraft-embed/actions/runs/39445878801",
+      "failedAt": "2026-10-20T15:10:33.963Z"
+    }
+  }
+}
