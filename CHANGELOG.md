@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.9
+
+- Update the embedded engine to Gridcraft v0.9.0 and rebase the integration patch so cells-only mode keeps working alongside the new host options for hiding the title bar and File tab.
+
 ## Unreleased
 
 - Move the embedding API and browser services into an owned Rust crate; remove all patches to upstream's standalone browser application.

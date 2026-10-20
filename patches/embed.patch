@@ -16,10 +16,10 @@ index 7f1ad87fc145a9a61a1ba957a8606b6b0b5672a0..bcea32c41c8c4ccb21845c5b99d10529
      let mut layouter = move |ui: &egui::Ui, buf: &dyn egui::TextBuffer, wrap_width: f32| {
          let s = buf.as_str();
 diff --git a/crates/ui-egui/src/grid.rs b/crates/ui-egui/src/grid.rs
-index 97b787ef3308dcd4418a62fbcb85a2f3b2715c62..09d239ffc0a3553dfcfb121d09935a0861b752c1 100644
+index 106bc66841555c7f3669505f81dab06d87fd05e8..72a5fb4d3f98449182af357b3ab34083fd3c1502 100644
 --- a/crates/ui-egui/src/grid.rs
 +++ b/crates/ui-egui/src/grid.rs
-@@ -455,7 +455,7 @@ fn center_across_end(start: u32, limit: u32, continues: impl Fn(u32) -> bool) ->
+@@ -457,7 +457,7 @@ fn center_across_end(start: u32, limit: u32, continues: impl Fn(u32) -> bool) ->
      end
  }
  
@@ -28,7 +28,7 @@ index 97b787ef3308dcd4418a62fbcb85a2f3b2715c62..09d239ffc0a3553dfcfb121d09935a08
      let mut style = wb.styles.get(sh.style_id(c)).clone();
      if let Some(t) = sh.table_at(c) {
          style = gridcraft_engine::tables::table_cell_style(wb, si, t, c);
-@@ -512,7 +512,7 @@ fn look(wb: &Workbook, si: usize, sh: &Sheet, c: CellRef, cf: &mut CfCache) -> (
+@@ -518,7 +518,7 @@ fn look(wb: &Workbook, si: usize, sh: &Sheet, c: CellRef, cf: &mut CfCache) -> (
      {
          fill = Some(theme::color32(rgb));
      }
@@ -37,7 +37,7 @@ index 97b787ef3308dcd4418a62fbcb85a2f3b2715c62..09d239ffc0a3553dfcfb121d09935a08
      (Look { style, fill, text_color }, cfl)
  }
  
-@@ -1081,11 +1081,11 @@ pub(crate) fn paint_quadrant(
+@@ -1111,11 +1111,11 @@ pub(crate) fn paint_quadrant(
              Some(m) => (geo.range_rect(sh, m), m.start),
              None => (geo.cell_rect(sh, c), c),
          };
@@ -51,7 +51,7 @@ index 97b787ef3308dcd4418a62fbcb85a2f3b2715c62..09d239ffc0a3553dfcfb121d09935a08
          }
          looks.push((anchor, rect, lk, cfl));
      }
-@@ -1322,7 +1322,7 @@ pub(crate) fn paint_quadrant(
+@@ -1352,7 +1352,7 @@ pub(crate) fn paint_quadrant(
              // A merged area's outline lives on the cells along each of its edges (Excel writes the
              // right edge on the last column's cells and the bottom edge on the last row's), so each
              // edge is drawn cell by cell from the cell it belongs to.
@@ -60,7 +60,7 @@ index 97b787ef3308dcd4418a62fbcb85a2f3b2715c62..09d239ffc0a3553dfcfb121d09935a08
              None => vec![
                  (b.top, [rect.left_top(), rect.right_top()]),
                  (b.bottom, [rect.left_bottom(), rect.right_bottom()]),
-@@ -1334,14 +1334,14 @@ pub(crate) fn paint_quadrant(
+@@ -1364,14 +1364,14 @@ pub(crate) fn paint_quadrant(
              if line.is_none() {
                  continue;
              }
@@ -78,7 +78,7 @@ index 97b787ef3308dcd4418a62fbcb85a2f3b2715c62..09d239ffc0a3553dfcfb121d09935a08
          }
          // Comment / note indicator.
          if let Some(cm) = sh.comments.get(c) {
-@@ -1416,6 +1416,7 @@ fn merged_edges(
+@@ -1446,6 +1446,7 @@ fn merged_edges(
      rows: (u32, u32),
      cols: (u32, u32),
      cf: &mut CfCache,
@@ -86,7 +86,7 @@ index 97b787ef3308dcd4418a62fbcb85a2f3b2715c62..09d239ffc0a3553dfcfb121d09935a08
  ) -> Vec<(BorderLine, [Pos2; 2])> {
      let mut out = Vec::new();
      let (cs, ce) = (m.start.col.max(cols.0), m.end.col.min(cols.1));
-@@ -1424,8 +1425,8 @@ fn merged_edges(
+@@ -1454,8 +1455,8 @@ fn merged_edges(
              continue;
          }
          let (x0, x1) = (geo.x(sh, col), geo.x(sh, col.saturating_add(1)));
@@ -97,7 +97,7 @@ index 97b787ef3308dcd4418a62fbcb85a2f3b2715c62..09d239ffc0a3553dfcfb121d09935a08
          out.push((top, [pos2(x0, rect.top()), pos2(x1, rect.top())]));
          out.push((bottom, [pos2(x0, rect.bottom()), pos2(x1, rect.bottom())]));
      }
-@@ -1435,8 +1436,8 @@ fn merged_edges(
+@@ -1465,8 +1466,8 @@ fn merged_edges(
              continue;
          }
          let (y0, y1) = (geo.y(sh, row), geo.y(sh, row.saturating_add(1)));
@@ -108,7 +108,7 @@ index 97b787ef3308dcd4418a62fbcb85a2f3b2715c62..09d239ffc0a3553dfcfb121d09935a08
          out.push((left, [pos2(rect.left(), y0), pos2(rect.left(), y1)]));
          out.push((right, [pos2(rect.right(), y0), pos2(rect.right(), y1)]));
      }
-@@ -2702,16 +2703,19 @@ fn in_cell_editor(app: &mut SheetApp, ui: &mut egui::Ui, geo: &Geo, sh: &Sheet,
+@@ -2734,16 +2735,19 @@ fn in_cell_editor(app: &mut SheetApp, ui: &mut egui::Ui, geo: &Geo, sh: &Sheet,
      let st = wb.styles.get(sh.style_id(cell)).clone();
      let size = st.font.size * 96.0 / 72.0 * geo.z;
      let font = FontId::new(size, theme::cell_family(&st.font.name, st.font.bold, st.font.italic));
@@ -133,7 +133,7 @@ index 97b787ef3308dcd4418a62fbcb85a2f3b2715c62..09d239ffc0a3553dfcfb121d09935a08
      let split = pos2(geo.cells.left() + geo.frozen_w, geo.cells.top() + geo.frozen_h);
      let quadrant = Rect::from_min_max(
          pos2(if cell.col >= geo.fc { split.x } else { geo.cells.left() }, if cell.row >= geo.fr { split.y } else { geo.cells.top() }),
-@@ -2720,10 +2724,11 @@ fn in_cell_editor(app: &mut SheetApp, ui: &mut egui::Ui, geo: &Geo, sh: &Sheet,
+@@ -2752,10 +2756,11 @@ fn in_cell_editor(app: &mut SheetApp, ui: &mut egui::Ui, geo: &Geo, sh: &Sheet,
      let clip = ui.clip_rect().intersect(quadrant);
      let painter = ui.painter().with_clip_rect(clip);
      painter.rect_filled(erect, 0.0, fill);
@@ -147,7 +147,7 @@ index 97b787ef3308dcd4418a62fbcb85a2f3b2715c62..09d239ffc0a3553dfcfb121d09935a08
  }
  
 diff --git a/crates/ui-egui/src/lib.rs b/crates/ui-egui/src/lib.rs
-index f96cdac3c07e29a1722461041a4324b2e1bd804b..0f2d716d992197061a532b6f4a80198b9af9ec71 100644
+index f549aec2b50cbe0b9e30498fcdf1368fe27e307e..738c62d20c9ddaaadab163a1a793409df11e2ab4 100644
 --- a/crates/ui-egui/src/lib.rs
 +++ b/crates/ui-egui/src/lib.rs
 @@ -51,6 +51,8 @@ pub struct UiState {
@@ -167,7 +167,7 @@ index f96cdac3c07e29a1722461041a4324b2e1bd804b..0f2d716d992197061a532b6f4a80198b
              ribbon_tab: "Home".into(),
              ribbon_collapsed: false,
              formula_bar_expanded: false,
-@@ -573,6 +576,10 @@ impl SheetApp {
+@@ -596,6 +599,10 @@ impl SheetApp {
      /// UI-only commands (dialogs, view toggles that aren't saved in the file).
      fn run_ui_command(&mut self, id: &str, p: &Json) -> Option<Result<Json, String>> {
          let r = match id {
@@ -178,19 +178,23 @@ index f96cdac3c07e29a1722461041a4324b2e1bd804b..0f2d716d992197061a532b6f4a80198b
              "ui.printSettings" => printing::settings(&mut self.printing, p, self.services.printers.as_ref()),
              "ui.printSubmit" => self.submit_print(p.clone()),
              "ui.ribbonTab" => {
-@@ -1103,25 +1110,29 @@ impl SheetApp {
-         // The language the widgets translate with this frame (see `i18n::current`).
-         i18n::set_current(&ctx, self.ui.language);
-         let t = theme::Tokens::get(&ctx);
+@@ -1145,27 +1152,31 @@ impl SheetApp {
+         if !self.chrome.file_tab {
+             self.backstage = None;
+         }
 -        if self.backstage.is_none() {
 -            self.ribbon_keys(&ctx);
+-        }
+-        if self.chrome.title_bar {
+-            ribbon::title_bar(self, ui);
 +        if !self.ui.cells_only {
 +            if self.backstage.is_none() {
 +                self.ribbon_keys(&ctx);
 +            }
-+            ribbon::title_bar(self, ui);
++            if self.chrome.title_bar {
++                ribbon::title_bar(self, ui);
++            }
          }
--        ribbon::title_bar(self, ui);
 -        if self.backstage.is_some() {
 +        if !self.ui.cells_only && self.backstage.is_some() {
              // File tab: the Backstage view replaces everything below the title bar.
@@ -223,7 +227,7 @@ index f96cdac3c07e29a1722461041a4324b2e1bd804b..0f2d716d992197061a532b6f4a80198b
                  let g0 = now_ms();
                  grid::show(self, ui);
 diff --git a/crates/ui-egui/src/theme.rs b/crates/ui-egui/src/theme.rs
-index 485b9a2f3799cb09e7e6cfb9b2cff6794a226fa5..50cc9f57e4598be1ad7b7e75eb5d7b26227d220c 100644
+index 08097ba27025aae1ad1860753599a381581d38fe..927726b61c2e17802739a7b775ee7cdbefc35d35 100644
 --- a/crates/ui-egui/src/theme.rs
 +++ b/crates/ui-egui/src/theme.rs
 @@ -110,9 +110,9 @@ impl Tokens {
