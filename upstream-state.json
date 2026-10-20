@@ -7,5 +7,6 @@
   "publishedAt": "2026-10-20T14:52:34Z",
   "packageVersion": "0.1.9",
   "prerelease": false,
-  "status": "pending"
+  "status": "published",
+  "npmIntegrity": "sha512-ohmmMVmhP2VH9Cr1ZbLbM3FyLQymNQsaLvmUiSzuTFuK1hoq8seHBJEdITm7PdvGslqFCpXFPrYaw/j+dNC3Lg=="
 }
