@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.11
+
+- Update the embedded engine to Gridcraft v0.11.1 and rebase the integration patch so cells-only mode and dark cell text keep working alongside upstream's File-view keytips and wrapping in-cell editor.
+
 ## 0.1.9
 
 - Update the embedded engine to Gridcraft v0.9.0 and rebase the integration patch so cells-only mode keeps working alongside the new host options for hiding the title bar and File tab.

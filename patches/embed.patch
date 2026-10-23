@@ -1,8 +1,8 @@
 diff --git a/crates/ui-egui/src/formula_bar.rs b/crates/ui-egui/src/formula_bar.rs
-index 7f1ad87fc145a9a61a1ba957a8606b6b0b5672a0..bcea32c41c8c4ccb21845c5b99d1052953432d16 100644
+index b88699f571ef4e8196717b8f340e115a91c57fe4..c827188971828bce6179886c25c8156204e07562 100644
 --- a/crates/ui-egui/src/formula_bar.rs
 +++ b/crates/ui-egui/src/formula_bar.rs
-@@ -259,7 +259,11 @@ pub fn editor_widget(app: &mut SheetApp, ui: &mut egui::Ui, id: egui::Id, font:
+@@ -294,7 +294,11 @@ pub fn editor_widget(app: &mut SheetApp, ui: &mut egui::Ui, id: egui::Id, font:
      // The text widget.
      let refs = formula_refs(&ed.text);
      let text_color = Tokens::get(ui.ctx()).text;
@@ -16,10 +16,10 @@ index 7f1ad87fc145a9a61a1ba957a8606b6b0b5672a0..bcea32c41c8c4ccb21845c5b99d10529
      let mut layouter = move |ui: &egui::Ui, buf: &dyn egui::TextBuffer, wrap_width: f32| {
          let s = buf.as_str();
 diff --git a/crates/ui-egui/src/grid.rs b/crates/ui-egui/src/grid.rs
-index 106bc66841555c7f3669505f81dab06d87fd05e8..72a5fb4d3f98449182af357b3ab34083fd3c1502 100644
+index a0efbfae7ad750ba473338bce1f9da8c9587a2b0..0f7ab928224b39845f266fafd16c8f09b2625588 100644
 --- a/crates/ui-egui/src/grid.rs
 +++ b/crates/ui-egui/src/grid.rs
-@@ -457,7 +457,7 @@ fn center_across_end(start: u32, limit: u32, continues: impl Fn(u32) -> bool) ->
+@@ -447,7 +447,7 @@ fn center_across_end(start: u32, limit: u32, continues: impl Fn(u32) -> bool) ->
      end
  }
  
@@ -28,7 +28,7 @@ index 106bc66841555c7f3669505f81dab06d87fd05e8..72a5fb4d3f98449182af357b3ab34083
      let mut style = wb.styles.get(sh.style_id(c)).clone();
      if let Some(t) = sh.table_at(c) {
          style = gridcraft_engine::tables::table_cell_style(wb, si, t, c);
-@@ -518,7 +518,7 @@ fn look(wb: &Workbook, si: usize, sh: &Sheet, c: CellRef, cf: &mut CfCache) -> (
+@@ -508,7 +508,7 @@ fn look(wb: &Workbook, si: usize, sh: &Sheet, c: CellRef, cf: &mut CfCache) -> (
      {
          fill = Some(theme::color32(rgb));
      }
@@ -37,7 +37,7 @@ index 106bc66841555c7f3669505f81dab06d87fd05e8..72a5fb4d3f98449182af357b3ab34083
      (Look { style, fill, text_color }, cfl)
  }
  
-@@ -1111,11 +1111,11 @@ pub(crate) fn paint_quadrant(
+@@ -1120,11 +1120,11 @@ pub(crate) fn paint_quadrant(
              Some(m) => (geo.range_rect(sh, m), m.start),
              None => (geo.cell_rect(sh, c), c),
          };
@@ -51,7 +51,16 @@ index 106bc66841555c7f3669505f81dab06d87fd05e8..72a5fb4d3f98449182af357b3ab34083
          }
          looks.push((anchor, rect, lk, cfl));
      }
-@@ -1352,7 +1352,7 @@ pub(crate) fn paint_quadrant(
+@@ -1140,7 +1140,7 @@ pub(crate) fn paint_quadrant(
+         let right = (c1.saturating_add(1)..=c1.saturating_add(20).min(MAX_COLS - 1)).map(|col| CellRef::new(r, col)).find(|&n| !empty_ok(n));
+         for n in [left, right].into_iter().flatten() {
+             if same_pane(n.col) && sh.col_width(n.col) > 0.0 && in_merge(n).is_none() {
+-                let (lk, cfl) = look(wb, si, sh, n, cf);
++                let (lk, cfl) = look(wb, si, sh, n, cf, t);
+                 outside.push((n, geo.cell_rect(sh, n), lk, cfl));
+             }
+         }
+@@ -1381,7 +1381,7 @@ pub(crate) fn paint_quadrant(
              // A merged area's outline lives on the cells along each of its edges (Excel writes the
              // right edge on the last column's cells and the bottom edge on the last row's), so each
              // edge is drawn cell by cell from the cell it belongs to.
@@ -60,7 +69,7 @@ index 106bc66841555c7f3669505f81dab06d87fd05e8..72a5fb4d3f98449182af357b3ab34083
              None => vec![
                  (b.top, [rect.left_top(), rect.right_top()]),
                  (b.bottom, [rect.left_bottom(), rect.right_bottom()]),
-@@ -1364,14 +1364,14 @@ pub(crate) fn paint_quadrant(
+@@ -1393,14 +1393,14 @@ pub(crate) fn paint_quadrant(
              if line.is_none() {
                  continue;
              }
@@ -78,7 +87,7 @@ index 106bc66841555c7f3669505f81dab06d87fd05e8..72a5fb4d3f98449182af357b3ab34083
          }
          // Comment / note indicator.
          if let Some(cm) = sh.comments.get(c) {
-@@ -1446,6 +1446,7 @@ fn merged_edges(
+@@ -1542,6 +1542,7 @@ fn merged_edges(
      rows: (u32, u32),
      cols: (u32, u32),
      cf: &mut CfCache,
@@ -86,7 +95,7 @@ index 106bc66841555c7f3669505f81dab06d87fd05e8..72a5fb4d3f98449182af357b3ab34083
  ) -> Vec<(BorderLine, [Pos2; 2])> {
      let mut out = Vec::new();
      let (cs, ce) = (m.start.col.max(cols.0), m.end.col.min(cols.1));
-@@ -1454,8 +1455,8 @@ fn merged_edges(
+@@ -1550,8 +1551,8 @@ fn merged_edges(
              continue;
          }
          let (x0, x1) = (geo.x(sh, col), geo.x(sh, col.saturating_add(1)));
@@ -97,7 +106,7 @@ index 106bc66841555c7f3669505f81dab06d87fd05e8..72a5fb4d3f98449182af357b3ab34083
          out.push((top, [pos2(x0, rect.top()), pos2(x1, rect.top())]));
          out.push((bottom, [pos2(x0, rect.bottom()), pos2(x1, rect.bottom())]));
      }
-@@ -1465,8 +1466,8 @@ fn merged_edges(
+@@ -1561,8 +1562,8 @@ fn merged_edges(
              continue;
          }
          let (y0, y1) = (geo.y(sh, row), geo.y(sh, row.saturating_add(1)));
@@ -108,11 +117,10 @@ index 106bc66841555c7f3669505f81dab06d87fd05e8..72a5fb4d3f98449182af357b3ab34083
          out.push((left, [pos2(rect.left(), y0), pos2(rect.left(), y1)]));
          out.push((right, [pos2(rect.right(), y0), pos2(rect.right(), y1)]));
      }
-@@ -2734,16 +2735,19 @@ fn in_cell_editor(app: &mut SheetApp, ui: &mut egui::Ui, geo: &Geo, sh: &Sheet,
+@@ -3056,6 +3057,13 @@ fn in_cell_editor(app: &mut SheetApp, ui: &mut egui::Ui, geo: &Geo, sh: &Sheet,
      let st = wb.styles.get(sh.style_id(cell)).clone();
      let size = st.font.size * 96.0 / 72.0 * geo.z;
      let font = FontId::new(size, theme::cell_family(&st.font.name, st.font.bold, st.font.italic));
--    let text_w = ui.painter().layout_no_wrap(ed.text.clone(), font.clone(), Color32::BLACK).size().x;
 +    let t = Tokens::get(ui.ctx());
 +    let explicit_fill = match st.fill.pattern {
 +        PatternType::Solid => st.fill.fg.resolve(&wb.theme).map(theme::color32),
@@ -120,10 +128,11 @@ index 106bc66841555c7f3669505f81dab06d87fd05e8..72a5fb4d3f98449182af357b3ab34083
 +    };
 +    let fill = explicit_fill.unwrap_or(t.grid_bg);
 +    let text_color = col32(st.font.color, wb, t.automatic_cell_text(explicit_fill));
-+    let text_w = ui.painter().layout_no_wrap(ed.text.clone(), font.clone(), text_color).size().x;
      let lines = ed.text.lines().count().max(1) as f32 + if ed.text.ends_with('\n') { 1.0 } else { 0.0 };
-     let w = (text_w + 14.0).max(rect.width()).min(geo.cells.right() - rect.left());
-     let h = (size * 1.3 * lines + 4.0).max(rect.height());
+     // Wrap Text: the editor keeps the column's width and wraps, growing down as Excel's does.
+     // Otherwise it widens to the text's one-line width.
+@@ -3073,10 +3081,6 @@ fn in_cell_editor(app: &mut SheetApp, ui: &mut egui::Ui, geo: &Geo, sh: &Sheet,
+     };
      // Grows to the left on a right-to-left sheet.
      let erect = geo.mirror_rect(Rect::from_min_size(rect.min, vec2(w, h)));
 -    let fill = match st.fill.pattern {
@@ -133,7 +142,7 @@ index 106bc66841555c7f3669505f81dab06d87fd05e8..72a5fb4d3f98449182af357b3ab34083
      let split = pos2(geo.cells.left() + geo.frozen_w, geo.cells.top() + geo.frozen_h);
      let quadrant = Rect::from_min_max(
          pos2(if cell.col >= geo.fc { split.x } else { geo.cells.left() }, if cell.row >= geo.fr { split.y } else { geo.cells.top() }),
-@@ -2752,10 +2756,11 @@ fn in_cell_editor(app: &mut SheetApp, ui: &mut egui::Ui, geo: &Geo, sh: &Sheet,
+@@ -3085,13 +3089,14 @@ fn in_cell_editor(app: &mut SheetApp, ui: &mut egui::Ui, geo: &Geo, sh: &Sheet,
      let clip = ui.clip_rect().intersect(quadrant);
      let painter = ui.painter().with_clip_rect(clip);
      painter.rect_filled(erect, 0.0, fill);
@@ -142,15 +151,27 @@ index 106bc66841555c7f3669505f81dab06d87fd05e8..72a5fb4d3f98449182af357b3ab34083
      let id = egui::Id::new("gridcraft.cell_editor");
      let mut child = ui.new_child(egui::UiBuilder::new().max_rect(erect.shrink2(vec2(2.0, 1.0))));
      child.set_clip_rect(clip);
+     // The theme's caret is meant for the UI chrome and vanishes on some fills (and, in the dark
+     // theme, on the white paper): pick black or white against the fill, like Excel.
+     child.visuals_mut().text_cursor.stroke.color = ink_on(fill);
 +    child.visuals_mut().override_text_color = Some(text_color);
-     crate::formula_bar::editor_widget(app, &mut child, id, font, false, erect.width() - 4.0);
+     crate::formula_bar::editor_widget(app, &mut child, id, font, wrap, erect.width() - 4.0);
  }
  
+@@ -4015,7 +4020,7 @@ mod tests {
+         let mut cf = CfCache::new();
+         let text = |row: u32, cf: &mut CfCache| {
+             let c = CellRef::new(row, 0);
+-            let (lk, _) = look(&wb, 0, sh, c, cf);
++            let (lk, _) = look(&wb, 0, sh, c, cf, &Tokens::light());
+             display_text(&wb, sh, c, &sh.value(c), &lk.style, 200.0, 7.0).0
+         };
+         assert_eq!(text(0, &mut cf), "1");
 diff --git a/crates/ui-egui/src/lib.rs b/crates/ui-egui/src/lib.rs
-index f549aec2b50cbe0b9e30498fcdf1368fe27e307e..738c62d20c9ddaaadab163a1a793409df11e2ab4 100644
+index faae9bfae84bee82554d871755d3dfcd85e3f5fb..14641f61837a96d6423c4e83e047115738f95f54 100644
 --- a/crates/ui-egui/src/lib.rs
 +++ b/crates/ui-egui/src/lib.rs
-@@ -51,6 +51,8 @@ pub struct UiState {
+@@ -52,6 +52,8 @@ pub struct UiState {
      /// The manual preference, retained when following the system appearance.
      pub dark: bool,
      pub system_theme: bool,
@@ -159,7 +180,7 @@ index f549aec2b50cbe0b9e30498fcdf1368fe27e307e..738c62d20c9ddaaadab163a1a793409d
      pub ribbon_tab: String,
      pub ribbon_collapsed: bool,
      pub formula_bar_expanded: bool,
-@@ -97,6 +99,7 @@ impl Default for UiState {
+@@ -101,6 +103,7 @@ impl Default for UiState {
          UiState {
              dark: false,
              system_theme: false,
@@ -167,7 +188,7 @@ index f549aec2b50cbe0b9e30498fcdf1368fe27e307e..738c62d20c9ddaaadab163a1a793409d
              ribbon_tab: "Home".into(),
              ribbon_collapsed: false,
              formula_bar_expanded: false,
-@@ -596,6 +599,10 @@ impl SheetApp {
+@@ -614,6 +617,10 @@ impl SheetApp {
      /// UI-only commands (dialogs, view toggles that aren't saved in the file).
      fn run_ui_command(&mut self, id: &str, p: &Json) -> Option<Result<Json, String>> {
          let r = match id {
@@ -178,17 +199,19 @@ index f549aec2b50cbe0b9e30498fcdf1368fe27e307e..738c62d20c9ddaaadab163a1a793409d
              "ui.printSettings" => printing::settings(&mut self.printing, p, self.services.printers.as_ref()),
              "ui.printSubmit" => self.submit_print(p.clone()),
              "ui.ribbonTab" => {
-@@ -1145,27 +1152,31 @@ impl SheetApp {
+@@ -1283,28 +1290,32 @@ impl SheetApp {
          if !self.chrome.file_tab {
              self.backstage = None;
          }
--        if self.backstage.is_none() {
+-        // Keytips opened the File view (Alt, F): its letters keep working there.
+-        if self.backstage.is_none() || self.keytips.prefix().is_some() {
 -            self.ribbon_keys(&ctx);
 -        }
 -        if self.chrome.title_bar {
 -            ribbon::title_bar(self, ui);
 +        if !self.ui.cells_only {
-+            if self.backstage.is_none() {
++            // Keytips opened the File view (Alt, F): its letters keep working there.
++            if self.backstage.is_none() || self.keytips.prefix().is_some() {
 +                self.ribbon_keys(&ctx);
 +            }
 +            if self.chrome.title_bar {
@@ -227,10 +250,10 @@ index f549aec2b50cbe0b9e30498fcdf1368fe27e307e..738c62d20c9ddaaadab163a1a793409d
                  let g0 = now_ms();
                  grid::show(self, ui);
 diff --git a/crates/ui-egui/src/theme.rs b/crates/ui-egui/src/theme.rs
-index 08097ba27025aae1ad1860753599a381581d38fe..927726b61c2e17802739a7b775ee7cdbefc35d35 100644
+index d454f0380bf83dd268bc935a8ca62fc616dc2b40..ac91d0130dcfe8efbc991becea84f6c8d459049b 100644
 --- a/crates/ui-egui/src/theme.rs
 +++ b/crates/ui-egui/src/theme.rs
-@@ -110,9 +110,9 @@ impl Tokens {
+@@ -117,9 +117,9 @@ impl Tokens {
              hover: Color32::from_rgb(0x42, 0x42, 0x42),
              pressed: Color32::from_rgb(0x4D, 0x4D, 0x4D),
              separator: Color32::from_rgb(0x48, 0x48, 0x48),
@@ -242,7 +265,7 @@ index 08097ba27025aae1ad1860753599a381581d38fe..927726b61c2e17802739a7b775ee7cdb
              header_bg: Color32::from_rgb(0x30, 0x30, 0x30),
              header_text: Color32::from_rgb(0xCC, 0xCC, 0xCC),
              header_line: Color32::from_rgb(0x45, 0x45, 0x45),
-@@ -126,7 +126,7 @@ impl Tokens {
+@@ -133,7 +133,7 @@ impl Tokens {
              tab_bar: Color32::from_rgb(0x29, 0x29, 0x29),
              tab_active: Color32::from_rgb(0x3A, 0x3A, 0x3A),
              status_bar: Color32::from_rgb(0x29, 0x29, 0x29),
@@ -251,7 +274,7 @@ index 08097ba27025aae1ad1860753599a381581d38fe..927726b61c2e17802739a7b775ee7cdb
              menu_bg: Color32::from_rgb(0x30, 0x30, 0x30),
              shadow: Color32::from_black_alpha(90),
              danger: Color32::from_rgb(0xF1, 0x70, 0x5F),
-@@ -140,6 +140,18 @@ impl Tokens {
+@@ -150,6 +150,18 @@ impl Tokens {
      pub fn get(ctx: &egui::Context) -> Tokens {
          if ctx.global_style().visuals.dark_mode { Tokens::dark() } else { Tokens::light() }
      }
