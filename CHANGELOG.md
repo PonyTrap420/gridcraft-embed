@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.12
+
+- Update the embedded engine to Gridcraft v0.12.1 and rebase the integration patch onto its new theme tokens, so dark mode keeps a dark grid with readable formula-reference colours and automatic cell text.
+
 ## 0.1.11
 
 - Update the embedded engine to Gridcraft v0.11.1 and rebase the integration patch so cells-only mode and dark cell text keep working alongside upstream's File-view keytips and wrapping in-cell editor.
