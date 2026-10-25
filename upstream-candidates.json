@@ -16,6 +16,14 @@
       "stage": "patch",
       "runUrl": "https://github.com/PonyTrap420/gridcraft-embed/actions/runs/39871045740",
       "failedAt": "2026-10-22T23:20:24.545Z"
+    },
+    "423419456:f86aec12dabc744b5f75e1033f87bfe685e78481:e08d37596be084fe5a4d13baa434314cc86a20164997f0594e9fe514ffb81f61": {
+      "commit": "f86aec12dabc744b5f75e1033f87bfe685e78481",
+      "fingerprint": "e08d37596be084fe5a4d13baa434314cc86a20164997f0594e9fe514ffb81f61",
+      "tag": "v0.12.1",
+      "stage": "patch",
+      "runUrl": "https://github.com/PonyTrap420/gridcraft-embed/actions/runs/40201259210",
+      "failedAt": "2026-10-25T14:14:23.792Z"
     }
   }
 }
