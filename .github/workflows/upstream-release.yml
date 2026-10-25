@@ -41,10 +41,10 @@ jobs:
       build: ${{ steps.plan.outputs.build }}
       source_sha: ${{ steps.plan.outputs.source_sha }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           ref: main
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
           node-version: '24'
       - id: plan
@@ -54,7 +54,7 @@ jobs:
           FORCE_BUILD: ${{ inputs.force_build }}
           RETRY_FAILED: ${{ inputs.retry_failed }}
         run: node scripts/plan-release.mjs
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v6
         if: steps.plan.outputs.build == 'true'
         with:
           name: candidate-plan
@@ -70,14 +70,14 @@ jobs:
     outputs:
       failure_stage: ${{ steps.classify.outputs.stage }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           ref: ${{ needs.plan.outputs.source_sha }}
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
           node-version: '24'
           cache: npm
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v7
         with:
           name: candidate-plan
           path: .work
@@ -97,7 +97,7 @@ jobs:
         run: node scripts/prepare-upstream.mjs
       - name: Install pinned Rust toolchain
         run: rustup toolchain install 1.95.0 --profile minimal --target wasm32-unknown-unknown
-      - uses: actions/cache@v4
+      - uses: actions/cache@v5
         with:
           path: |
             ~/.cargo/registry
@@ -143,7 +143,7 @@ jobs:
           npm pack --pack-destination .work
           tar --exclude=.git --exclude=.work --exclude=node_modules --exclude=dist/wasm --exclude=dist/notices --exclude=demo/dist --exclude=screenshots -czf .work/source.tar.gz .
           node scripts/validate-artifacts.mjs
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v6
         with:
           name: release
           include-hidden-files: true
@@ -152,7 +152,7 @@ jobs:
             .work/*.tgz
             .work/source.tar.gz
             .work/validated-candidate.json
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v6
         if: always()
         with:
           name: browser-screenshots
@@ -174,13 +174,13 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           ref: ${{ needs.plan.outputs.source_sha }}
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
           node-version: '24'
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v7
         with:
           name: candidate-plan
           path: .work
@@ -198,15 +198,15 @@ jobs:
       contents: write
       id-token: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           fetch-depth: 0
           ref: ${{ needs.plan.outputs.source_sha }}
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
           node-version: '24'
       - run: npm install -g npm@11.21.0
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v7
         with:
           name: release
           path: .work/artifacts
