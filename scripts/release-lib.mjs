@@ -3,7 +3,8 @@ import {readFileSync, writeFileSync} from "node:fs";
 export const readJson = path => JSON.parse(readFileSync(path, "utf8"));
 export const writeJson = (path, value) => writeFileSync(path, JSON.stringify(value, null, 2) + "\n");
 export function run(command, args, options = {}) {
-  return (execFileSync(command, args, {stdio: ["ignore", "pipe", "inherit"], encoding: "utf8", ...options}) ?? "").trim();
+  // cargo metadata for the whole workspace is over Node's 1 MiB default.
+  return (execFileSync(command, args, {stdio: ["ignore", "pipe", "inherit"], encoding: "utf8", maxBuffer: 64 * 1024 * 1024, ...options}) ?? "").trim();
 }
 export function nextRelease(releases, state) {
   const key = value => [Date.parse(value.published_at ?? value.publishedAt), value.id ?? value.releaseId];
