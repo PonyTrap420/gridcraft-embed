@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.13
+
+- Update the embedded engine to Gridcraft v0.19.1 and port the integration patch onto upstream's split grid, app and theme modules, so cells-only mode, the dark grid and readable automatic cell text keep working.
+- Lighten the macro outlines, trace arrows and Python tag in dark mode so they stay visible on the dark grid.
+
 ## 0.1.12
 
 - Update the embedded engine to Gridcraft v0.12.1 and rebase the integration patch onto its new theme tokens, so dark mode keeps a dark grid with readable formula-reference colours and automatic cell text.

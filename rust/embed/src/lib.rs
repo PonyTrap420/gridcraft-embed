@@ -60,9 +60,9 @@ impl eframe::App for EmbeddedApp {
         }
     }
 
-    fn raw_input_hook(&mut self, _ctx: &egui::Context, raw: &mut egui::RawInput) {
+    fn raw_input_hook(&mut self, ctx: &egui::Context, raw: &mut egui::RawInput) {
         if let Ok(mut state) = self.state.try_borrow_mut() {
-            state.app.raw_input_hook(raw);
+            state.app.raw_input_hook(ctx, raw);
         }
     }
 
